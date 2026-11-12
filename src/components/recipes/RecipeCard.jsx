@@ -50,6 +50,11 @@ function RecipeCard({ receta, favorite, onToggleFavorite }) {
             {receta.porcentajeCoincidencia}% de ingredientes disponibles
           </p>
         ) : null}
+        {receta.ingredientesFaltantes?.length > 0 && receta.porcentajeCoincidencia > 0 ? (
+          <p className="mt-1 text-sm text-muted">
+            Te falta: {receta.ingredientesFaltantes.join(", ")}
+          </p>
+        ) : null}
 
         <div className="mt-5 flex flex-col items-center gap-3">
           <Button to={recetaDetallePath(receta.recetaId)} size="md" className="w-full">

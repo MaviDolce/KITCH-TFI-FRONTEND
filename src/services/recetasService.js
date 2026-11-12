@@ -1,6 +1,7 @@
 import { http } from "../api/http"
 import { mapRecipeFromApi, mapRecomendacionFromApi, mergeMatch } from "../api/mappers/recipe"
 import { ApiError } from "../api/errors"
+import { GRUPOS_RECOMENDACION } from "../constants/recipeFilters"
 
 export function filterRecipes(recetas, { query = "", filtro = "todas" } = {}) {
   const needle = query.trim().toLowerCase()
@@ -20,7 +21,12 @@ export function filterRecipes(recetas, { query = "", filtro = "todas" } = {}) {
   } else if (filtro === "faciles") {
     list = list.filter((receta) => receta.dificultad === "Facil")
   } else if (filtro === "ingredientes") {
-    list = list.filter((receta) => receta.porcentajeCoincidencia === 100)
+    list = list.filter(
+      (receta) =>
+        receta.grupo === GRUPOS_RECOMENDACION.completa || receta.porcentajeCoincidencia === 100,
+    )
+  } else if (filtro === "faltanPocos") {
+    list = list.filter((receta) => receta.grupo === GRUPOS_RECOMENDACION.teFaltanPocos)
   }
 
   return list

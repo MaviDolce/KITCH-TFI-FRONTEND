@@ -4,7 +4,7 @@ import Card from "../ui/Card"
 import SelectField from "../ui/SelectField"
 import TextField from "../ui/TextField"
 import { DIET_OPTIONS } from "../../constants/diet"
-import { isEmail, isUsername } from "../../utils/validators"
+import { isUsername } from "../../utils/validators"
 
 function PersonalInfoForm({ user, onSubmit, onBack }) {
   const [form, setForm] = useState({
@@ -32,7 +32,6 @@ function PersonalInfoForm({ user, onSubmit, onBack }) {
     if (!isUsername(form.nombreUsuario)) {
       next.nombreUsuario = "Usá al menos 3 caracteres: letras, números, punto, guion o guion bajo."
     }
-    if (!isEmail(form.email)) next.email = "El formato del email no es válido."
     return next
   }
 
@@ -60,7 +59,7 @@ function PersonalInfoForm({ user, onSubmit, onBack }) {
   return (
     <Card className="max-w-2xl">
       <h2 className="text-xl font-bold tracking-tight text-ink">Información personal</h2>
-      <p className="mt-1 text-sm text-muted">Nombre, apellido, usuario, email y preferencia dietética.</p>
+      <p className="mt-1 text-sm text-muted">Nombre, apellido, usuario y preferencia dietética.</p>
 
       <form className="mt-6 grid gap-4" onSubmit={handleSubmit} noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -97,8 +96,9 @@ function PersonalInfoForm({ user, onSubmit, onBack }) {
           type="email"
           autoComplete="email"
           value={form.email}
-          onChange={updateField("email")}
-          error={errors.email}
+          readOnly
+          aria-readonly="true"
+          hint="El email no se puede modificar."
         />
         <SelectField
           label="Preferencia dietética"

@@ -2,58 +2,26 @@ export function roundCantidad(value) {
   return Math.round(Number(value) * 100) / 100
 }
 
-export function factorPorciones(seleccionadas, originales) {
-  const base = Number(originales)
-  const next = Number(seleccionadas)
-  if (!base || base <= 0) {
-    return 1
-  }
-  if (!next || next <= 0) {
-    return 1
-  }
-  return next / base
-}
-
-export function ajustarCantidad(
-  cantidadOriginal,
-  seleccionadas,
-  originales,
-  factorEquivalencia = 1,
-) {
-  const equivalencia = Number(factorEquivalencia) || 1
-  return roundCantidad(
-    Number(cantidadOriginal) * factorPorciones(seleccionadas, originales) * equivalencia,
-  )
-}
-
 export function formatCantidadAjustada(value) {
-  const cantidad = roundCantidad(value)
-  if (Number.isInteger(cantidad)) {
-    return String(cantidad)
-  }
-  return String(cantidad)
+  return String(roundCantidad(value))
 }
 
-export function ingredientesAjustados(
-  ingredientes,
-  porcionesSeleccionadas,
-  porcionesOriginales,
-  replacements = {},
-) {
+export function filasIngredientes(ingredientes = [], preview, replacements = {}) {
+  const porId = new Map((preview?.ingredientes ?? []).map((item) => [item.ingredienteId, item]))
+
   return ingredientes.map((ingrediente) => {
-    const sustituto = replacements[ingrediente.nombre]
-    const factorEquivalencia = sustituto ? Number(sustituto.factorEquivalencia) || 1 : 1
+    const reemplazo = replacements[ingrediente.ingredienteId] ?? null
+    const efectivoId = reemplazo?.ingredienteSustitutoId ?? ingrediente.ingredienteId
+    const calculado = porId.get(efectivoId)
     return {
       ...ingrediente,
-      nombreMostrado: sustituto?.nombre ?? ingrediente.nombre,
-      reemplazaA: sustituto ? ingrediente.nombre : undefined,
-      cantidadAjustada: ajustarCantidad(
-        ingrediente.cantidad,
-        porcionesSeleccionadas,
-        porcionesOriginales,
-        factorEquivalencia,
-      ),
-      sustituto: sustituto ?? null,
+      nombreMostrado: reemplazo?.nombre ?? ingrediente.nombre,
+      reemplazaA: reemplazo ? ingrediente.nombre : undefined,
+      cantidadAjustada: calculado ? calculado.cantidadAjustada : ingrediente.cantidad,
+      unidad: calculado?.unidadMedida ?? ingrediente.unidad,
+      cantidadFaltante: calculado?.cantidadFaltante ?? 0,
+      enAlacena: calculado ? calculado.alcanzaStock : false,
+      calculado: Boolean(calculado),
     }
   })
 }

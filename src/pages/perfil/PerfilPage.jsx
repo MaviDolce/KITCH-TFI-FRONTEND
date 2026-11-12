@@ -1,17 +1,21 @@
 import { useEffect, useState } from "react"
-import { CreditCard, LogOut, Sparkles, UserRound } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { CreditCard, LockKeyhole, LogOut, ShieldCheck, Sparkles, UserRound } from "lucide-react"
 import PersonalInfoForm from "../../components/perfil/PersonalInfoForm"
 import ProfileHero from "../../components/perfil/ProfileHero"
 import ProfileNavCard from "../../components/perfil/ProfileNavCard"
+import SecurityForm from "../../components/perfil/SecurityForm"
 import Button from "../../components/ui/Button"
 import Spinner from "../../components/ui/Spinner"
+import { ROLES } from "../../constants/roles"
 import { ROUTES } from "../../constants/routes"
 import { useAuth } from "../../hooks/useAuth"
 import { perfilService } from "../../services/perfilService"
 import { planLabel } from "../../utils/profile"
 
 function PerfilPage() {
-  const { user, logout, updateProfile } = useAuth()
+  const { user, logout, updateProfile, changePassword } = useAuth()
+  const navigate = useNavigate()
   const [section, setSection] = useState("hub")
   const [profile, setProfile] = useState(user)
   const [loading, setLoading] = useState(true)
@@ -38,6 +42,11 @@ function PerfilPage() {
   async function handleUpdate(payload) {
     const next = await updateProfile(payload)
     setProfile(next)
+  }
+
+  function handleLogout() {
+    logout()
+    navigate(ROUTES.login, { replace: true })
   }
 
   if (loading || !profile) {
@@ -84,6 +93,12 @@ function PerfilPage() {
         </div>
       ) : null}
 
+      {section === "seguridad" ? (
+        <div className="relative mt-8">
+          <SecurityForm onSubmit={changePassword} onBack={() => setSection("hub")} />
+        </div>
+      ) : null}
+
       {section === "hub" ? (
         <>
           <div className="relative mt-8 grid max-w-2xl gap-4 sm:grid-cols-2">
@@ -91,6 +106,11 @@ function PerfilPage() {
               icon={UserRound}
               title="Información personal"
               onClick={() => setSection("personal")}
+            />
+            <ProfileNavCard
+              icon={LockKeyhole}
+              title="Seguridad"
+              onClick={() => setSection("seguridad")}
             />
             <ProfileNavCard
               icon={Sparkles}
@@ -103,9 +123,12 @@ function PerfilPage() {
               title="Método de pago"
               to={ROUTES.suscripcion}
             />
+            {profile.rol === ROLES.admin ? (
+              <ProfileNavCard icon={ShieldCheck} title="Administración" to={ROUTES.adminUsuarios} />
+            ) : null}
           </div>
 
-          <Button variant="outline" size="md" className="relative mt-8" onClick={logout}>
+          <Button variant="outline" size="md" className="relative mt-8" onClick={handleLogout}>
             <LogOut size={16} aria-hidden="true" />
             Cerrar sesión
           </Button>

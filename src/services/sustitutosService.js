@@ -1,30 +1,23 @@
+import { IA_TIMEOUT_MS } from "../api/config"
 import { http } from "../api/http"
 
-export function mapSustitutoFromApi(dto, stockItems = []) {
-  const nombre = dto.ingredienteSustituto || dto.nombre
-  const disponibleEnAlacena =
-    typeof dto.disponibleEnAlacena === "boolean"
-      ? dto.disponibleEnAlacena
-      : stockItems.some(
-          (item) => item.nombreIngrediente?.toLowerCase() === String(nombre).toLowerCase(),
-        )
+export function mapSustitutoFromApi(dto) {
   return {
     id: dto.id ?? dto.ingredienteId,
     ingredienteId: dto.ingredienteId,
-    nombre,
+    nombre: dto.ingredienteSustituto || dto.nombre,
     factorEquivalencia: Number(dto.factorEquivalencia) || 1,
     notas: dto.notas,
     hayMasConProfesional: Boolean(dto.hayMasConProfesional),
-    disponibleEnAlacena,
+    disponibleEnAlacena: Boolean(dto.disponibleEnAlacena),
   }
 }
 
 export const sustitutosService = {
-  async listarPorIngrediente(ingredienteId, stockItems = []) {
-    if (!ingredienteId) {
-      return []
-    }
-    const { data } = await http.get(`/api/Sustitutos/ingrediente/${ingredienteId}`)
-    return (data ?? []).map((item) => mapSustitutoFromApi(item, stockItems))
+  async sugeridos(ingredienteId) {
+    const { data } = await http.get(`/api/Sustitutos/sugeridos/${ingredienteId}`, {
+      timeout: IA_TIMEOUT_MS,
+    })
+    return (data ?? []).map(mapSustitutoFromApi)
   },
 }

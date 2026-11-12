@@ -1,3 +1,4 @@
+import { IA_TIMEOUT_MS } from "../api/config"
 import { http } from "../api/http"
 import { mapDificultad, toneFromCategoria } from "../api/mappers/dificultad"
 import { mapRecomendacionFromApi } from "../api/mappers/recipe"
@@ -56,7 +57,7 @@ export const chatIaService = {
             pasos: recetaActual.pasos ?? recetaActual.preparaciones?.map((paso) => paso.descripcionPaso),
           }
         : null,
-    })
+    }, { timeout: IA_TIMEOUT_MS })
     return {
       accion: data.accion,
       mensaje: data.mensaje,

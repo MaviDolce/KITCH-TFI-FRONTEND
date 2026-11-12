@@ -1,5 +1,11 @@
 export const USERNAME_PATTERN = /^[a-zA-Z0-9._-]+$/
 
+export const PASSWORD_MIN_LENGTH = 8
+
+export function isValidPassword(value) {
+  return typeof value === "string" && value.length >= PASSWORD_MIN_LENGTH
+}
+
 export function isEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
 }

@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom"
+import { ROLES } from "../constants/roles"
 import { ROUTES } from "../constants/routes"
 import AppLayout from "../layouts/AppLayout"
 import AuthLayout from "../layouts/AuthLayout"
@@ -7,6 +8,8 @@ import LoginPage from "../pages/auth/LoginPage"
 import RegisterPage from "../pages/auth/RegisterPage"
 import ResetPasswordPage from "../pages/auth/ResetPasswordPage"
 import VerifyCodePage from "../pages/auth/VerifyCodePage"
+import AdminMetricasPage from "../pages/admin/AdminMetricasPage"
+import AdminUsuariosPage from "../pages/admin/AdminUsuariosPage"
 import AlacenaPage from "../pages/alacena/AlacenaPage"
 import ComprasPage from "../pages/compras/ComprasPage"
 import ExplorarPage from "../pages/explorar/ExplorarPage"
@@ -15,6 +18,7 @@ import HomePage from "../pages/home/HomePage"
 import KitchIaPage from "../pages/kitch-ia/KitchIaPage"
 import PerfilPage from "../pages/perfil/PerfilPage"
 import PlanificadorPage from "../pages/planificador/PlanificadorPage"
+import PagoExitosoPage from "../pages/suscripcion/PagoExitosoPage"
 import SuscripcionPage from "../pages/suscripcion/SuscripcionPage"
 import RecipeDetailPage from "../pages/recetas/RecipeDetailPage"
 import CocinarPage from "../pages/recetas/CocinarPage"
@@ -22,17 +26,22 @@ import SetupPage from "../pages/setup/SetupPage"
 import GuestOnly from "./GuestOnly"
 import RequireAuth from "./RequireAuth"
 
+const ADMIN_ONLY = [ROLES.admin]
+
 function AppRouter() {
   return (
     <Routes>
       <Route path={ROUTES.ui} element={<SetupPage />} />
+
+      <Route element={<AuthLayout />}>
+        <Route path={ROUTES.resetPassword} element={<ResetPasswordPage />} />
+      </Route>
 
       <Route element={<GuestOnly />}>
         <Route element={<AuthLayout />}>
           <Route path={ROUTES.login} element={<LoginPage />} />
           <Route path={ROUTES.register} element={<RegisterPage />} />
           <Route path={ROUTES.forgotPassword} element={<ForgotPasswordPage />} />
-          <Route path={ROUTES.resetPassword} element={<ResetPasswordPage />} />
           <Route path={ROUTES.verifyCode} element={<VerifyCodePage />} />
         </Route>
       </Route>
@@ -47,9 +56,17 @@ function AppRouter() {
           <Route path={ROUTES.compras} element={<ComprasPage />} />
           <Route path={ROUTES.perfil} element={<PerfilPage />} />
           <Route path={ROUTES.suscripcion} element={<SuscripcionPage />} />
+          <Route path={ROUTES.pagoExitoso} element={<PagoExitosoPage />} />
           <Route path={ROUTES.favoritos} element={<FavoritosPage />} />
           <Route path={ROUTES.recetaDetalle} element={<RecipeDetailPage />} />
           <Route path={ROUTES.recetaCocinar} element={<CocinarPage />} />
+        </Route>
+      </Route>
+
+      <Route element={<RequireAuth roles={ADMIN_ONLY} />}>
+        <Route element={<AppLayout />}>
+          <Route path={ROUTES.adminUsuarios} element={<AdminUsuariosPage />} />
+          <Route path={ROUTES.adminMetricas} element={<AdminMetricasPage />} />
         </Route>
       </Route>
 

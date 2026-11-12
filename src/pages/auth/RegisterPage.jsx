@@ -9,7 +9,7 @@ import { DIET_OPTIONS } from "../../constants/diet"
 import { ROUTES } from "../../constants/routes"
 import { useAuth } from "../../hooks/useAuth"
 import { authService } from "../../services/authService"
-import { isEmail, isUsername } from "../../utils/validators"
+import { isEmail, isUsername, isValidPassword, PASSWORD_MIN_LENGTH } from "../../utils/validators"
 
 function RegisterPage() {
   const { register } = useAuth()
@@ -41,8 +41,8 @@ function RegisterPage() {
         "Usá al menos 3 caracteres: letras, números, punto, guion o guion bajo."
     }
     if (!isEmail(form.email)) next.email = "El formato del email no es válido."
-    if (form.password.length < 6) {
-      next.password = "La contraseña debe tener al menos 6 caracteres."
+    if (!isValidPassword(form.password)) {
+      next.password = `La contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres.`
     }
     return next
   }
@@ -64,7 +64,7 @@ function RegisterPage() {
         return
       }
       await register(form)
-      navigate(ROUTES.home, { replace: true })
+      navigate(ROUTES.verifyCode, { replace: true })
     } catch (err) {
       setFormError(err.message)
     } finally {

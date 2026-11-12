@@ -1,7 +1,7 @@
-import { Minus, Plus } from "lucide-react"
+import { Minus, Pencil, Plus } from "lucide-react"
 import { formatCaducidad, formatCantidad, isExpiringSoon } from "../../utils/stock"
 
-function StockItemCard({ item, onIncrement, onDecrement }) {
+function StockItemCard({ item, onIncrement, onDecrement, onEdit }) {
   const expiring = isExpiringSoon(item.fechaCaducidad)
 
   return (
@@ -21,6 +21,14 @@ function StockItemCard({ item, onIncrement, onDecrement }) {
         ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-1">
+        <button
+          type="button"
+          aria-label={`Editar ${item.nombreIngrediente}`}
+          onClick={() => onEdit(item)}
+          className="inline-flex size-10 items-center justify-center rounded-full text-muted transition-colors duration-150 hover:bg-primary/10 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        >
+          <Pencil size={14} strokeWidth={2.5} />
+        </button>
         <button
           type="button"
           aria-label={`Restar ${item.nombreIngrediente}`}

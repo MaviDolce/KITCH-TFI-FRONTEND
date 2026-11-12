@@ -8,20 +8,33 @@ import { ROUTES } from "../../constants/routes"
 import { useAuth } from "../../hooks/useAuth"
 import { authService } from "../../services/authService"
 
+const RESEND_COOLDOWN_SECONDS = 60
+
 function VerifyCodePage() {
-  const { pendingTwoFactor, verifyTwoFactor } = useAuth()
+  const { pendingTwoFactor, verifyTwoFactor, resendTwoFactor } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const pending = pendingTwoFactor ?? authService.getPendingTwoFactor()
   const [code, setCode] = useState("")
   const [error, setError] = useState("")
+  const [notice, setNotice] = useState(pending?.mensaje ?? "")
   const [loading, setLoading] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [cooldown, setCooldown] = useState(RESEND_COOLDOWN_SECONDS)
 
   useEffect(() => {
     if (!pending) {
       navigate(ROUTES.login, { replace: true })
     }
   }, [navigate, pending])
+
+  useEffect(() => {
+    if (cooldown <= 0) {
+      return undefined
+    }
+    const timer = window.setTimeout(() => setCooldown((current) => current - 1), 1000)
+    return () => window.clearTimeout(timer)
+  }, [cooldown])
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -41,6 +54,22 @@ function VerifyCodePage() {
       setError(err.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleResend() {
+    setError("")
+    setNotice("")
+    setResending(true)
+    try {
+      const result = await resendTwoFactor()
+      setNotice(result.mensaje)
+      setCode("")
+      setCooldown(RESEND_COOLDOWN_SECONDS)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setResending(false)
     }
   }
 
@@ -69,9 +98,24 @@ function VerifyCodePage() {
             {error}
           </p>
         ) : null}
+        {notice && !error ? (
+          <p className="text-sm text-success" role="status">
+            {notice}
+          </p>
+        ) : null}
 
         <Button type="submit" className="w-full" loading={loading}>
           Verificar
+        </Button>
+        <Button
+          variant="ghost"
+          size="md"
+          className="w-full"
+          onClick={handleResend}
+          loading={resending}
+          disabled={cooldown > 0}
+        >
+          {cooldown > 0 ? `Reenviar código (${cooldown} s)` : "Reenviar código"}
         </Button>
       </form>
 

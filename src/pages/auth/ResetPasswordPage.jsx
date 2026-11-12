@@ -6,16 +6,19 @@ import TextField from "../../components/ui/TextField"
 import TextLink from "../../components/ui/TextLink"
 import { ROUTES } from "../../constants/routes"
 import { useAuth } from "../../hooks/useAuth"
+import { isValidPassword, PASSWORD_MIN_LENGTH } from "../../utils/validators"
 
 function ResetPasswordPage() {
-  const { resetPassword } = useAuth()
+  const { resetPassword, logout, isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
+  const email = searchParams.get("email") ?? ""
   const [token, setToken] = useState(
     location.state?.token ?? searchParams.get("token") ?? "",
   )
   const [nuevaPassword, setNuevaPassword] = useState("")
+  const [confirmacion, setConfirmacion] = useState("")
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const [loading, setLoading] = useState(false)
@@ -29,15 +32,22 @@ function ResetPasswordPage() {
       setError("El token de recuperación es obligatorio.")
       return
     }
-    if (nuevaPassword.length < 6) {
-      setError("La nueva contraseña debe tener al menos 6 caracteres.")
+    if (!isValidPassword(nuevaPassword)) {
+      setError(`La nueva contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres.`)
+      return
+    }
+    if (nuevaPassword !== confirmacion) {
+      setError("Las contraseñas no coinciden.")
       return
     }
 
     setLoading(true)
     try {
-      const response = await resetPassword({ token, nuevaPassword })
+      const response = await resetPassword({ token: token.trim(), nuevaPassword })
       setSuccess(response.message)
+      if (isAuthenticated) {
+        logout()
+      }
       window.setTimeout(() => navigate(ROUTES.login, { replace: true }), 1200)
     } catch (err) {
       setError(err.message)
@@ -49,7 +59,11 @@ function ResetPasswordPage() {
   return (
     <AuthCard
       title="Restablecer contraseña"
-      subtitle="Ingresá el token de recuperación y tu nueva contraseña."
+      subtitle={
+        email
+          ? `Elegí una nueva contraseña para ${email}.`
+          : "Ingresá el token de recuperación y tu nueva contraseña."
+      }
     >
       <form className="grid gap-5" onSubmit={handleSubmit} noValidate>
         <TextField
@@ -67,6 +81,14 @@ function ResetPasswordPage() {
           value={nuevaPassword}
           onChange={(event) => setNuevaPassword(event.target.value)}
         />
+        <TextField
+          label="Repetí la nueva contraseña"
+          name="confirmacion"
+          type="password"
+          autoComplete="new-password"
+          value={confirmacion}
+          onChange={(event) => setConfirmacion(event.target.value)}
+        />
         {error ? (
           <p className="text-sm text-primary" role="alert">
             {error}
@@ -77,7 +99,7 @@ function ResetPasswordPage() {
             {success}
           </p>
         ) : null}
-        <Button type="submit" className="w-full" loading={loading}>
+        <Button type="submit" className="w-full" loading={loading} disabled={Boolean(success)}>
           Guardar contraseña
         </Button>
       </form>
