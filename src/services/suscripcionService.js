@@ -22,12 +22,25 @@ export const suscripcionService = {
     return list.find((item) => item.activa) ?? list[0] ?? null
   },
 
+  async getPlan() {
+    const { data } = await http.get("/api/Suscripciones/plan")
+    return {
+      tipo: data?.tipo ?? "",
+      monto: Number(data?.monto ?? 0),
+      moneda: data?.moneda || "ARS",
+    }
+  },
+
   async contratar(payload) {
     const { data } = await http.post("/api/Suscripciones/contratar", {
       tipo: payload.tipo,
-      monto: payload.monto,
       metodoPago: toMetodoPago(payload.metodoPago),
     })
+    return data
+  },
+
+  async confirmarPago(paymentId) {
+    const { data } = await http.post("/api/Suscripciones/confirmar-pago", { paymentId: String(paymentId) })
     return data
   },
 

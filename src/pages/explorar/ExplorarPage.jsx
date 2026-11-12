@@ -5,6 +5,7 @@ import RecipeCard from "../../components/recipes/RecipeCard"
 import SearchField from "../../components/ui/SearchField"
 import Spinner from "../../components/ui/Spinner"
 import { RECIPE_FILTERS } from "../../constants/recipeFilters"
+import { useTransientNotice } from "../../hooks/useTransientNotice"
 import { favoritosService } from "../../services/favoritosService"
 import { filterRecipes, recetasService } from "../../services/recetasService"
 
@@ -17,6 +18,7 @@ function ExplorarPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState("")
   const [actionError, setActionError] = useState("")
+  const [notice, showNotice] = useTransientNotice()
 
   useEffect(() => {
     let active = true
@@ -72,6 +74,7 @@ function ExplorarPage() {
           ? [...new Set([...current, recetaId])]
           : current.filter((id) => id !== recetaId),
       )
+      showNotice(result.message)
     } catch (error) {
       setActionError(error.message)
     }
@@ -129,6 +132,11 @@ function ExplorarPage() {
         {actionError ? (
           <p className="mt-4 text-sm text-primary" role="alert">
             {actionError}
+          </p>
+        ) : null}
+        {notice ? (
+          <p className="mt-4 text-sm text-success" role="status">
+            {notice}
           </p>
         ) : null}
 

@@ -4,26 +4,13 @@ import ShoppingItemCard from "../../components/compras/ShoppingItemCard"
 import Button from "../../components/ui/Button"
 import SearchField from "../../components/ui/SearchField"
 import Spinner from "../../components/ui/Spinner"
-import { CATEGORIA_VARIOS, PANTRY_CATEGORIES } from "../../constants/pantryCategories"
 import { listaCompraService } from "../../services/listaCompraService"
-import { stepForUnidad } from "../../utils/stock"
+import { agruparPorCategoria, stepForUnidad } from "../../utils/stock"
 
 const FILTERS = {
   todos: "todos",
   pendientes: "pendientes",
   comprados: "comprados",
-}
-
-function groupByCategoria(items) {
-  const groups = new Map()
-  for (const item of items) {
-    const key = item.categoria || CATEGORIA_VARIOS
-    if (!groups.has(key)) {
-      groups.set(key, [])
-    }
-    groups.get(key).push(item)
-  }
-  return groups
 }
 
 function ComprasPage() {
@@ -33,6 +20,7 @@ function ComprasPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [notice, setNotice] = useState("")
+  const [error, setError] = useState("")
   const [generating, setGenerating] = useState(false)
 
   useEffect(() => {
@@ -43,6 +31,11 @@ function ComprasPage() {
       .then((list) => {
         if (active) {
           setItems(list)
+        }
+      })
+      .catch((err) => {
+        if (active) {
+          setError(err.message)
         }
       })
       .finally(() => {
@@ -71,11 +64,16 @@ function ComprasPage() {
     })
   }, [filtro, items, query])
 
-  const groups = useMemo(() => groupByCategoria(visible), [visible])
-  const categoryOrder = [
-    ...PANTRY_CATEGORIES.map((categoria) => categoria.id),
-    CATEGORIA_VARIOS,
-  ]
+  const groups = useMemo(() => agruparPorCategoria(visible), [visible])
+
+  async function run(action) {
+    setError("")
+    try {
+      await action()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
 
   async function handleCreate(payload) {
     const created = await listaCompraService.crear(payload)
@@ -87,67 +85,60 @@ function ComprasPage() {
     setNotice(`Agregamos ${created.nombreArticulo} a la lista.`)
   }
 
-  async function handleToggle(item) {
-    await listaCompraService.actualizar(item.id, {
-      nombreArticulo: item.nombreArticulo,
-      cantidadFaltante: item.cantidadFaltante,
-      estaComprado: !item.estaComprado,
-      unidadMedida: item.unidadMedida,
-      ingredienteId: item.ingredienteId,
+  function handleToggle(item) {
+    return run(async () => {
+      if (!item.estaComprado) {
+        await listaCompraService.marcarComprado(item.id)
+        setItems(await listaCompraService.listar())
+        setNotice(`Marcamos ${item.nombreArticulo} como comprado y lo sumamos a tu alacena.`)
+        return
+      }
+      await listaCompraService.actualizar(item.id, {
+        nombreArticulo: item.nombreArticulo,
+        cantidadFaltante: item.cantidadFaltante,
+        estaComprado: false,
+        unidadMedida: item.unidadMedida,
+        ingredienteId: item.ingredienteId,
+      })
+      setItems((current) =>
+        current.map((row) => (row.id === item.id ? { ...row, estaComprado: false } : row)),
+      )
     })
-    setItems((current) =>
-      current.map((row) =>
-        row.id === item.id ? { ...row, estaComprado: !item.estaComprado } : row,
-      ),
-    )
   }
 
-  async function handleIncrement(item) {
-    const cantidadFaltante = item.cantidadFaltante + stepForUnidad(item.unidadMedida)
-    await listaCompraService.actualizar(item.id, {
-      nombreArticulo: item.nombreArticulo,
-      cantidadFaltante,
-      estaComprado: item.estaComprado,
-      unidadMedida: item.unidadMedida,
-      ingredienteId: item.ingredienteId,
+  function handleStep(item, direccion) {
+    return run(async () => {
+      const next = Math.max(
+        0,
+        Math.round((item.cantidadFaltante + direccion * stepForUnidad(item.unidadMedida)) * 100) / 100,
+      )
+      if (next <= 0) {
+        await listaCompraService.eliminar(item.id)
+        setItems((current) => current.filter((row) => row.id !== item.id))
+        return
+      }
+      await listaCompraService.actualizar(item.id, {
+        nombreArticulo: item.nombreArticulo,
+        cantidadFaltante: next,
+        estaComprado: item.estaComprado,
+        unidadMedida: item.unidadMedida,
+        ingredienteId: item.ingredienteId,
+      })
+      setItems((current) =>
+        current.map((row) => (row.id === item.id ? { ...row, cantidadFaltante: next } : row)),
+      )
     })
-    setItems((current) =>
-      current.map((row) => (row.id === item.id ? { ...row, cantidadFaltante } : row)),
-    )
-  }
-
-  async function handleDecrement(item) {
-    const next = item.cantidadFaltante - stepForUnidad(item.unidadMedida)
-    if (next <= 0) {
-      await listaCompraService.eliminar(item.id)
-      setItems((current) => current.filter((row) => row.id !== item.id))
-      return
-    }
-    await listaCompraService.actualizar(item.id, {
-      nombreArticulo: item.nombreArticulo,
-      cantidadFaltante: next,
-      estaComprado: item.estaComprado,
-      unidadMedida: item.unidadMedida,
-      ingredienteId: item.ingredienteId,
-    })
-    setItems((current) =>
-      current.map((row) => (row.id === item.id ? { ...row, cantidadFaltante: next } : row)),
-    )
   }
 
   async function handleGenerar() {
     setGenerating(true)
-    try {
-      const result = await listaCompraService.generarFaltantes()
-      setItems(result)
-      setNotice(
-        result.length
-          ? "Actualizamos los faltantes según tu plan y tu alacena."
-          : "No había faltantes nuevos para esta semana.",
-      )
-    } finally {
-      setGenerating(false)
-    }
+    setNotice("")
+    await run(async () => {
+      const resumen = await listaCompraService.resumen()
+      setItems(await listaCompraService.listar())
+      setNotice(resumen.mensaje)
+    })
+    setGenerating(false)
   }
 
   return (
@@ -224,6 +215,11 @@ function ComprasPage() {
           {notice}
         </p>
       ) : null}
+      {error ? (
+        <p className="relative mt-4 text-sm text-primary" role="alert">
+          {error}
+        </p>
+      ) : null}
 
       {showForm ? (
         <div className="relative mt-6 max-w-3xl">
@@ -243,11 +239,7 @@ function ComprasPage() {
         </p>
       ) : (
         <div className="relative mt-8 grid gap-8">
-          {categoryOrder.map((categoria) => {
-            const group = groups.get(categoria)
-            if (!group?.length) {
-              return null
-            }
+          {groups.map(({ categoria, items: group }) => {
             return (
               <section key={categoria} aria-labelledby={`compra-${categoria}`}>
                 <h2
@@ -262,8 +254,8 @@ function ComprasPage() {
                       <ShoppingItemCard
                         item={item}
                         onToggle={handleToggle}
-                        onIncrement={handleIncrement}
-                        onDecrement={handleDecrement}
+                        onIncrement={(row) => handleStep(row, 1)}
+                        onDecrement={(row) => handleStep(row, -1)}
                       />
                     </li>
                   ))}

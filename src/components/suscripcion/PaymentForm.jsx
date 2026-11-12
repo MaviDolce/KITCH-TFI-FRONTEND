@@ -4,7 +4,7 @@ import Card from "../ui/Card"
 import SelectField from "../ui/SelectField"
 import { METODOS_PAGO, PREMIUM_PLAN, formatMoney } from "../../constants/subscription"
 
-function PaymentForm({ onSubmit }) {
+function PaymentForm({ plan, onSubmit }) {
   const [metodoPago, setMetodoPago] = useState("TarjetaCredito")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
@@ -15,13 +15,11 @@ function PaymentForm({ onSubmit }) {
     setLoading(true)
     try {
       await onSubmit({
-        tipo: PREMIUM_PLAN.tipo,
-        monto: PREMIUM_PLAN.monto,
+        tipo: plan?.tipo || PREMIUM_PLAN.tipo,
         metodoPago,
       })
     } catch (err) {
       setError(err.message)
-    } finally {
       setLoading(false)
     }
   }
@@ -30,8 +28,8 @@ function PaymentForm({ onSubmit }) {
     <Card className="max-w-xl">
       <h2 className="text-xl font-bold tracking-tight text-ink">Método de pago</h2>
       <p className="mt-1 text-sm text-muted">
-        El cobro real usa Mercado Pago. En esta etapa no redirigimos a la pasarela:
-        si ya tenés plan Profesional, recargá la sesión.
+        Te vamos a redirigir a Mercado Pago para completar el pago de forma segura.
+        Al volver, actualizamos tu plan automáticamente.
       </p>
 
       <form className="mt-6 grid gap-4" onSubmit={handleSubmit}>
@@ -54,8 +52,8 @@ function PaymentForm({ onSubmit }) {
           </p>
         ) : null}
 
-        <Button type="submit" variant="accent" size="md" loading={loading}>
-          Pagar {formatMoney(PREMIUM_PLAN.monto)}
+        <Button type="submit" variant="accent" size="md" loading={loading} disabled={!plan}>
+          {plan ? `Pagar ${formatMoney(plan.monto, plan.moneda)}` : "Pagar"}
         </Button>
       </form>
     </Card>

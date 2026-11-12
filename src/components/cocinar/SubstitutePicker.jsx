@@ -1,23 +1,26 @@
 import Button from "../ui/Button"
 import Card from "../ui/Card"
 
-function SubstitutePicker({ ingrediente, sustitutos, selected, onSelect, embedded = false }) {
+export const MENSAJE_INSUSTITUIBLE =
+  "No hay un reemplazo viable que mantenga la receta. Podés abortar o guardarla para otro momento."
+
+function SubstitutePicker({ ingrediente, sustitutos, selected, onSelect, busyId = null, embedded = false }) {
   const body = (
     <>
       {embedded ? null : (
         <p className="text-sm font-semibold text-primary">Reemplazos para {ingrediente}</p>
       )}
       {sustitutos.length === 0 ? (
-        <p className={`${embedded ? "" : "mt-3"} text-sm text-muted`}>
-          No hay sustitutos cargados para este ingrediente.
+        <p className={`${embedded ? "" : "mt-3"} text-sm text-muted`} role="status">
+          {MENSAJE_INSUSTITUIBLE}
         </p>
       ) : (
         <ul className={embedded ? "space-y-3" : "mt-3 space-y-3"}>
           {sustitutos.map((item) => {
-            const active = selected?.nombre === item.nombre
+            const active = selected?.ingredienteSustitutoId === item.ingredienteId
             return (
               <li
-                key={item.nombre}
+                key={item.ingredienteId ?? item.nombre}
                 className={`flex flex-col gap-2 rounded-2xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${
                   embedded ? "bg-surface" : "bg-canvas"
                 }`}
@@ -36,6 +39,8 @@ function SubstitutePicker({ ingrediente, sustitutos, selected, onSelect, embedde
                   type="button"
                   size="md"
                   variant={active ? "primary" : "outline"}
+                  loading={busyId === item.ingredienteId}
+                  disabled={busyId !== null && busyId !== item.ingredienteId}
                   onClick={() => onSelect(active ? null : item)}
                 >
                   {active ? "Usando" : "Usar"}

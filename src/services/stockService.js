@@ -1,5 +1,6 @@
 import { CATEGORIA_VARIOS } from "../constants/pantryCategories"
 import { http } from "../api/http"
+import { toDateOnly } from "../utils/stock"
 
 export function mapStockFromApi(dto) {
   return {
@@ -8,8 +9,8 @@ export function mapStockFromApi(dto) {
     nombreIngrediente: dto.nombreIngrediente,
     cantidad: Number(dto.cantidad),
     unidadMedida: dto.unidadMedida,
-    fechaCaducidad: dto.fechaCaducidad ?? null,
-    categoria: CATEGORIA_VARIOS,
+    fechaCaducidad: toDateOnly(dto.fechaCaducidad),
+    categoria: dto.categoria || CATEGORIA_VARIOS,
   }
 }
 
@@ -26,6 +27,7 @@ export const stockService = {
       cantidad: payload.cantidad,
       unidadMedida: payload.unidadMedida,
       fechaCaducidad: payload.fechaCaducidad || null,
+      categoria: payload.categoria || CATEGORIA_VARIOS,
     })
     return mapStockFromApi(data)
   },
@@ -34,11 +36,13 @@ export const stockService = {
     await http.put(`/api/StockUsuarios/${id}`, {
       cantidad: payload.cantidad,
       unidadMedida: payload.unidadMedida,
+      fechaCaducidad: payload.fechaCaducidad || null,
     })
     return {
       id,
       cantidad: payload.cantidad,
       unidadMedida: payload.unidadMedida,
+      fechaCaducidad: toDateOnly(payload.fechaCaducidad),
     }
   },
 

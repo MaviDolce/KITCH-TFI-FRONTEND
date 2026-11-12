@@ -4,6 +4,7 @@ import SearchField from "../../components/ui/SearchField"
 import Spinner from "../../components/ui/Spinner"
 import TextLink from "../../components/ui/TextLink"
 import { ROUTES } from "../../constants/routes"
+import { useTransientNotice } from "../../hooks/useTransientNotice"
 import { favoritosService } from "../../services/favoritosService"
 
 function FavoritosPage() {
@@ -12,6 +13,7 @@ function FavoritosPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState("")
   const [actionError, setActionError] = useState("")
+  const [notice, showNotice] = useTransientNotice()
 
   useEffect(() => {
     let active = true
@@ -58,6 +60,7 @@ function FavoritosPage() {
       if (!result.esFavorito) {
         setRecetas((current) => current.filter((receta) => receta.recetaId !== recetaId))
       }
+      showNotice(result.message)
     } catch (error) {
       setActionError(error.message)
     }
@@ -95,6 +98,11 @@ function FavoritosPage() {
         {actionError ? (
           <p className="mt-4 text-sm text-primary" role="alert">
             {actionError}
+          </p>
+        ) : null}
+        {notice ? (
+          <p className="mt-4 text-sm text-success" role="status">
+            {notice}
           </p>
         ) : null}
 

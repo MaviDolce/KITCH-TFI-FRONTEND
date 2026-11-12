@@ -26,6 +26,7 @@ export function mapRecipeFromApi(dto) {
   const recetaId = dto.id ?? dto.recetaId
   return {
     recetaId,
+    usuarioId: dto.usuarioId ?? null,
     titulo: dto.titulo,
     descripcion: dto.descripcion ?? "",
     caloriasEstimadas: dto.caloriasEstimadas,
@@ -40,6 +41,7 @@ export function mapRecipeFromApi(dto) {
     ingredientesDisponibles: dto.ingredientesDisponibles,
     totalIngredientes: dto.totalIngredientes,
     ingredientesFaltantes: dto.ingredientesFaltantes ?? [],
+    grupo: dto.grupo ?? null,
   }
 }
 
@@ -60,6 +62,7 @@ export function mapRecomendacionFromApi(dto) {
     ingredientesDisponibles: dto.ingredientesDisponibles,
     porcentajeCoincidencia: dto.porcentajeCoincidencia,
     ingredientesFaltantes: dto.ingredientesFaltantes ?? [],
+    grupo: dto.grupo ?? null,
     descripcion: "",
     ingredientes: [],
     preparaciones: [],
@@ -76,5 +79,6 @@ export function mergeMatch(receta, recomendacion) {
     ingredientesDisponibles: recomendacion.ingredientesDisponibles,
     totalIngredientes: recomendacion.totalIngredientes,
     ingredientesFaltantes: recomendacion.ingredientesFaltantes,
+    grupo: recomendacion.grupo,
   }
 }

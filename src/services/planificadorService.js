@@ -2,7 +2,7 @@ import { ApiError } from "../api/errors"
 import { http } from "../api/http"
 
 export class PlanificadorConflictError extends Error {
-  constructor(message = "Ya existe una comida planificada para ese usuario, fecha y turno.") {
+  constructor(message = "Ya tienes una comida asignada en ese día y turno. ¿Deseas reemplazarla?") {
     super(message)
     this.name = "PlanificadorConflictError"
     this.code = "CONFLICT"
@@ -36,14 +36,19 @@ export const planificadorService = {
     return (data ?? []).map(mapComidaFromApi)
   },
 
-  async crear({ recetaId, fechaAsignada, turno }) {
+  async crear({ recetaId, fechaAsignada, turno, reemplazarSiConflicto = false }) {
     try {
       const { data } = await http.post("/api/Planificador", {
         recetaId: Number(recetaId),
         fechaAsignada: toApiFecha(fechaAsignada),
         turno,
+        reemplazarSiConflicto,
       })
-      return mapComidaFromApi(data)
+      return {
+        comida: mapComidaFromApi(data),
+        mensajeLista: data.mensajeLista ?? "",
+        reemplazoRealizado: Boolean(data.reemplazoRealizado),
+      }
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
         throw new PlanificadorConflictError(error.message)

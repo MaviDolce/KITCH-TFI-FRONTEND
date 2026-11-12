@@ -9,7 +9,8 @@ export function mapShoppingItemFromApi(dto) {
     cantidadFaltante: Number(dto.cantidadFaltante),
     unidadMedida: dto.unidadMedida || "",
     estaComprado: Boolean(dto.estaComprado),
-    categoria: CATEGORIA_VARIOS,
+    categoria: dto.categoria || CATEGORIA_VARIOS,
+    generadoPorPlan: Boolean(dto.generadoPorPlan),
   }
 }
 
@@ -51,5 +52,14 @@ export const listaCompraService = {
   async generarFaltantes() {
     const { data } = await http.get("/api/ListaCompra/faltantes")
     return (data ?? []).map(mapShoppingItemFromApi)
+  },
+
+  async resumen() {
+    const { data } = await http.get("/api/ListaCompra/resumen")
+    return {
+      todoCubierto: Boolean(data?.todoCubierto),
+      mensaje: data?.mensaje ?? "",
+      items: (data?.items ?? []).map(mapShoppingItemFromApi),
+    }
   },
 }

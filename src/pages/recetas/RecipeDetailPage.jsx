@@ -7,6 +7,7 @@ import {
   Clock,
   Flame,
   Heart,
+  ShoppingCart,
   Users,
 } from "lucide-react"
 import PortionStepper from "../../components/cocinar/PortionStepper"
@@ -19,13 +20,16 @@ import TextLink from "../../components/ui/TextLink"
 import { planificarPath, cocinarPath } from "../../constants/paths"
 import { ROUTES } from "../../constants/routes"
 import { ApiError } from "../../api/errors"
+import { useTransientNotice } from "../../hooks/useTransientNotice"
 import { favoritosService } from "../../services/favoritosService"
+import { preparacionService } from "../../services/preparacionService"
 import { recetasService } from "../../services/recetasService"
-import { stockService } from "../../services/stockService"
 import { sustitutosService } from "../../services/sustitutosService"
-import { buildCookState } from "../../utils/cookSession"
+import { buildCookState, buildReplacement, toSustituciones } from "../../utils/cookSession"
 import { formatDificultad } from "../../utils/dificultad"
-import { ingredientesAjustados } from "../../utils/porciones"
+import { filasIngredientes, formatCantidadAjustada } from "../../utils/porciones"
+
+const PREVIEW_DEBOUNCE_MS = 350
 
 const TONES = {
   ai: "bg-ai text-warning",
@@ -43,8 +47,13 @@ function RecipeDetailPage() {
   const [favorite, setFavorite] = useState(false)
   const [porciones, setPorciones] = useState(1)
   const [replacements, setReplacements] = useState({})
+  const [sugerencias, setSugerencias] = useState({})
+  const [preview, setPreview] = useState(null)
+  const [previewError, setPreviewError] = useState("")
+  const [agregando, setAgregando] = useState(false)
   const [planError, setPlanError] = useState("")
   const [actionError, setActionError] = useState("")
+  const [notice, showNotice] = useTransientNotice()
   const loading = loadedId !== String(id)
 
   useEffect(() => {
@@ -54,34 +63,19 @@ function RecipeDetailPage() {
 
     async function load() {
       try {
-        const found = await recetasService.getDetalle(id)
-        if (!active) {
-          return
-        }
-        const [stock, favoriteIds] = await Promise.all([
-          stockService.listar().catch(() => []),
+        const [found, favoriteIds] = await Promise.all([
+          recetasService.getDetalle(id),
           favoritosService.listIds().catch(() => []),
         ])
-        const ingredientes = await Promise.all(
-          (found.ingredientes ?? []).map(async (ingrediente) => {
-            const sustitutos = await sustitutosService
-              .listarPorIngrediente(ingrediente.ingredienteId, stock)
-              .catch(() => [])
-            const enAlacena = stock.some(
-              (item) =>
-                item.ingredienteId === ingrediente.ingredienteId ||
-                item.nombreIngrediente?.toLowerCase() === ingrediente.nombre?.toLowerCase(),
-            )
-            return { ...ingrediente, sustitutos, enAlacena }
-          }),
-        )
         if (!active) {
           return
         }
-        setReceta({ ...found, ingredientes })
+        setReceta(found)
         setLoadedId(String(id))
         setPorciones(found.porciones || 1)
         setReplacements({})
+        setSugerencias({})
+        setPreview(null)
         setFavorite(favoriteIds.includes(found.recetaId))
       } catch (error) {
         if (!active) {
@@ -101,12 +95,46 @@ function RecipeDetailPage() {
     }
   }, [id])
 
-  const ajustados = useMemo(() => {
-    if (!receta) {
-      return []
+  const recetaId = receta?.recetaId
+  const sustituciones = useMemo(() => toSustituciones(replacements), [replacements])
+  const sustitucionesKey = JSON.stringify(sustituciones)
+
+  useEffect(() => {
+    if (!recetaId) {
+      return undefined
     }
-    return ingredientesAjustados(receta.ingredientes, porciones, receta.porciones, replacements)
-  }, [receta, porciones, replacements])
+    let active = true
+    const timer = window.setTimeout(() => {
+      preparacionService
+        .previsualizarPorciones({
+          recetaId,
+          nuevasPorciones: porciones,
+          sustituciones: JSON.parse(sustitucionesKey),
+        })
+        .then((result) => {
+          if (active) {
+            setPreview(result)
+            setPreviewError("")
+          }
+        })
+        .catch((error) => {
+          if (active) {
+            setPreviewError(error.message)
+          }
+        })
+    }, PREVIEW_DEBOUNCE_MS)
+
+    return () => {
+      active = false
+      window.clearTimeout(timer)
+    }
+  }, [recetaId, porciones, sustitucionesKey])
+
+  const filas = useMemo(
+    () => (receta ? filasIngredientes(receta.ingredientes, preview, replacements) : []),
+    [receta, preview, replacements],
+  )
+  const faltantes = preview?.ingredientesFaltantes ?? []
 
   async function handleToggleFavorite() {
     if (!receta) {
@@ -116,21 +144,80 @@ function RecipeDetailPage() {
     try {
       const result = await favoritosService.toggle(receta.recetaId)
       setFavorite(result.esFavorito)
+      showNotice(result.message)
     } catch (error) {
       setActionError(error.message)
     }
   }
 
-  function handleSelectReplacement(nombre, item) {
-    setReplacements((current) => {
-      const next = { ...current }
-      if (!item) {
-        delete next[nombre]
-      } else {
-        next[nombre] = item
-      }
-      return next
-    })
+  function actualizarSugerencia(ingredienteId, patch) {
+    setSugerencias((current) => ({
+      ...current,
+      [ingredienteId]: { ...current[ingredienteId], ...patch },
+    }))
+  }
+
+  async function handleBuscarReemplazos(ingrediente) {
+    actualizarSugerencia(ingrediente.ingredienteId, { loading: true, error: "" })
+    try {
+      const items = await sustitutosService.sugeridos(ingrediente.ingredienteId)
+      actualizarSugerencia(ingrediente.ingredienteId, { loading: false, items })
+    } catch (error) {
+      actualizarSugerencia(ingrediente.ingredienteId, { loading: false, error: error.message })
+    }
+  }
+
+  async function handleSelectReplacement(ingrediente, item) {
+    setActionError("")
+    if (!item) {
+      setReplacements((current) => {
+        const next = { ...current }
+        delete next[ingrediente.ingredienteId]
+        return next
+      })
+      return
+    }
+    actualizarSugerencia(ingrediente.ingredienteId, { aplicando: item.ingredienteId })
+    try {
+      const result = await preparacionService.aplicarSustituto({
+        recetaId: receta.recetaId,
+        ingredienteOriginalId: ingrediente.ingredienteId,
+        ingredienteSustitutoId: item.ingredienteId,
+      })
+      setReplacements((current) => ({
+        ...current,
+        [ingrediente.ingredienteId]: buildReplacement(ingrediente, item),
+      }))
+      showNotice(result.mensaje)
+    } catch (error) {
+      setActionError(error.message)
+    } finally {
+      actualizarSugerencia(ingrediente.ingredienteId, { aplicando: null })
+    }
+  }
+
+  async function handleAgregarFaltantes() {
+    if (!receta) {
+      return
+    }
+    setActionError("")
+    setAgregando(true)
+    try {
+      await preparacionService.agregarFaltantes({
+        recetaId: receta.recetaId,
+        nuevasPorciones: porciones,
+        sustituciones,
+      })
+      showNotice(
+        faltantes.length === 1
+          ? "Agregamos 1 ingrediente a tu lista de compras."
+          : `Agregamos ${faltantes.length} ingredientes a tu lista de compras.`,
+      )
+    } catch (error) {
+      setActionError(error.message)
+    } finally {
+      setAgregando(false)
+    }
   }
 
   function handleCocinar() {
@@ -173,7 +260,11 @@ function RecipeDetailPage() {
   }
 
   const cover = TONES[receta.tone] ?? TONES.ai
-  const faltantes = receta.ingredientes.filter((item) => !item.enAlacena)
+  const resumenStock = !preview
+    ? ""
+    : faltantes.length === 0
+      ? "Tenés todo"
+      : `Faltan ${faltantes.map((item) => item.nombre).join(", ")}`
 
   return (
     <article className="max-w-3xl">
@@ -221,18 +312,23 @@ function RecipeDetailPage() {
           </ul>
 
           <p className="mt-4 text-sm font-medium text-primary">
-            {typeof receta.porcentajeCoincidencia === "number"
-              ? `${receta.porcentajeCoincidencia}% de ingredientes disponibles`
-              : `${faltantes.length === 0 ? "Tenés todo" : `Faltan ${faltantes.map((item) => item.nombre).join(", ")}`}`}
-            {typeof receta.porcentajeCoincidencia === "number" && faltantes.length > 0
-              ? ` · Faltan ${faltantes.map((item) => item.nombre).join(", ")}`
-              : typeof receta.porcentajeCoincidencia === "number"
-                ? " · Tenés todo"
-                : ""}
+            {[
+              typeof receta.porcentajeCoincidencia === "number"
+                ? `${receta.porcentajeCoincidencia}% de ingredientes disponibles`
+                : "",
+              resumenStock,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
           {actionError ? (
             <p className="mt-3 text-sm text-primary" role="alert">
               {actionError}
+            </p>
+          ) : null}
+          {notice ? (
+            <p className="mt-3 text-sm text-success" role="status">
+              {notice}
             </p>
           ) : null}
 
@@ -257,13 +353,42 @@ function RecipeDetailPage() {
           </div>
           <PortionStepper value={porciones} onChange={setPorciones} />
         </div>
+        {previewError ? (
+          <p className="mt-3 text-sm text-primary" role="alert">
+            {previewError}
+          </p>
+        ) : null}
         <div className="mt-4">
           <IngredientList
-            ingredientes={ajustados}
+            ingredientes={filas}
             replacements={replacements}
+            sugerencias={sugerencias}
+            onBuscar={handleBuscarReemplazos}
             onSelectReplacement={handleSelectReplacement}
           />
         </div>
+
+        {faltantes.length > 0 ? (
+          <div className="mt-4 grid gap-3 rounded-2xl bg-ai p-4" role="alert">
+            <p className="text-sm font-semibold text-ink">
+              Para {porciones} porciones te falta:
+            </p>
+            <ul className="grid gap-1 text-sm text-muted">
+              {faltantes.map((item) => (
+                <li key={item.ingredienteId}>
+                  {item.nombre}: {formatCantidadAjustada(item.cantidadFaltante)} {item.unidadMedida}
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Button type="button" size="md" loading={agregando} onClick={handleAgregarFaltantes}>
+                <ShoppingCart size={16} aria-hidden="true" />
+                Agregar faltantes a la lista de compras
+              </Button>
+              <TextLink to={ROUTES.compras}>Ver lista de compras</TextLink>
+            </div>
+          </div>
+        ) : null}
       </Card>
 
       <Card className="mt-6">

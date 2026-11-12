@@ -16,7 +16,9 @@ export const ROUTES = {
   compras: "/compras",
   perfil: "/perfil",
   suscripcion: "/suscripcion",
+  pagoExitoso: "/pago-exitoso",
   adminUsuarios: "/admin/usuarios",
+  adminMetricas: "/admin/metricas",
   adminIngredientes: "/admin/ingredientes",
   ui: "/ui",
 }

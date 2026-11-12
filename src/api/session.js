@@ -34,6 +34,26 @@ export function clearSessionToken() {
   window.localStorage.removeItem(STORAGE_KEYS.tokenExpires)
 }
 
+function removeKitchKeys(storage) {
+  const keys = []
+  for (let index = 0; index < storage.length; index += 1) {
+    const key = storage.key(index)
+    if (key?.startsWith(STORAGE_KEYS.prefix)) {
+      keys.push(key)
+    }
+  }
+  keys.forEach((key) => storage.removeItem(key))
+}
+
+export function clearAllSessionData() {
+  try {
+    removeKitchKeys(window.localStorage)
+    removeKitchKeys(window.sessionStorage)
+  } catch {
+    clearSessionToken()
+  }
+}
+
 export function notifyUnauthorized() {
   window.dispatchEvent(new CustomEvent(UNAUTHORIZED_EVENT))
 }

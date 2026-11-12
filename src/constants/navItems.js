@@ -1,4 +1,5 @@
 import {
+  ChartColumn,
   CookingPot,
   Home,
   LayoutGrid,
@@ -6,6 +7,7 @@ import {
   ShoppingCart,
   Sparkles,
   User,
+  Users,
 } from "lucide-react"
 import { ROUTES } from "./routes"
 
@@ -17,6 +19,11 @@ export const NAV_ITEMS = [
   { to: ROUTES.planificador, label: "Planificador", icon: LayoutGrid },
   { to: ROUTES.compras, label: "Compras", icon: ShoppingCart },
   { to: ROUTES.perfil, label: "Perfil", icon: User },
+]
+
+export const ADMIN_NAV_ITEMS = [
+  { to: ROUTES.adminUsuarios, label: "Usuarios", icon: Users },
+  { to: ROUTES.adminMetricas, label: "Métricas", icon: ChartColumn },
 ]
 
 export const MOBILE_NAV_ITEMS = NAV_ITEMS.filter((item) =>

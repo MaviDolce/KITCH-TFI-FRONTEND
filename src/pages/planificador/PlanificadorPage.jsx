@@ -41,6 +41,7 @@ function PlanificadorPage() {
   const [menuId, setMenuId] = useState(null)
   const [draft, setDraft] = useState(null)
   const [formError, setFormError] = useState("")
+  const [conflict, setConflict] = useState(null)
   const [notice, setNotice] = useState("")
   const recetaFromQuery = recetaParam
     ? recetas.find((item) => String(item.recetaId) === String(recetaParam)) ?? null
@@ -115,6 +116,7 @@ function PlanificadorPage() {
   function closeForm() {
     setDraft(null)
     setFormError("")
+    setConflict(null)
     if (recetaParam) {
       setSearchParams({}, { replace: true })
     }
@@ -143,13 +145,18 @@ function PlanificadorPage() {
 
   async function handleRemove(meal) {
     setMenuId(null)
-    await planificadorService.eliminar(meal.id)
-    setMeals((current) => current.filter((item) => item.id !== meal.id))
-    setNotice(`Quitamos ${meal.titulo} del plan.`)
+    try {
+      await planificadorService.eliminar(meal.id)
+      setMeals((current) => current.filter((item) => item.id !== meal.id))
+      setNotice(`Quitamos ${meal.titulo} del plan.`)
+    } catch (error) {
+      setNotice(error.message)
+    }
   }
 
   async function handleSubmit(payload) {
     setFormError("")
+    setConflict(null)
     try {
       if (payload.id) {
         const updated = await planificadorService.actualizar(payload.id, payload)
@@ -165,15 +172,32 @@ function PlanificadorPage() {
           setNotice("Actualizamos esa comida.")
         }
       } else {
-        const planificacion = await planificadorService.crear(payload)
-        setMeals((current) => [...current, planificacion])
-        setNotice(`Planificamos ${planificacion.titulo}.`)
+        const resultado = await planificadorService.crear(payload)
+        if (resultado.reemplazoRealizado) {
+          setMeals(await planificadorService.listar())
+        } else {
+          setMeals((current) => [...current, resultado.comida])
+        }
+        setNotice(
+          [
+            resultado.reemplazoRealizado
+              ? `Reemplazamos la comida por ${resultado.comida.titulo}.`
+              : `Planificamos ${resultado.comida.titulo}.`,
+            resultado.mensajeLista,
+          ]
+            .filter(Boolean)
+            .join(" "),
+        )
       }
       closeForm()
       setMonday(startOfWeek(parseDateKey(payload.fechaAsignada)))
     } catch (error) {
       if (error instanceof PlanificadorConflictError) {
-        setFormError("Ya hay una comida en ese día y turno.")
+        if (payload.id) {
+          setFormError(error.message)
+        } else {
+          setConflict({ payload, message: error.message })
+        }
         return
       }
       setFormError(error.message || "No pudimos guardar esa comida.")
@@ -212,6 +236,9 @@ function PlanificadorPage() {
             recetas={recetas}
             initial={formDraft}
             error={formError}
+            conflictMessage={conflict?.message ?? ""}
+            onConfirmReplace={() => handleSubmit({ ...conflict.payload, reemplazarSiConflicto: true })}
+            onDismissConflict={() => setConflict(null)}
             onSubmit={handleSubmit}
             onCancel={closeForm}
           />

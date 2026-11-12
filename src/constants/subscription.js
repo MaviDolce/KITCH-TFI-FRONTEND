@@ -1,6 +1,5 @@
 export const PREMIUM_PLAN = {
   tipo: "Profesional",
-  monto: 5000,
   periodo: "mes",
 }
 
@@ -57,10 +56,10 @@ export function estadoPagoLabel(value) {
   return value || ""
 }
 
-export function formatMoney(amount) {
+export function formatMoney(amount, currency = "ARS") {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
-    currency: "ARS",
+    currency: currency || "ARS",
     maximumFractionDigits: 0,
   }).format(amount)
 }

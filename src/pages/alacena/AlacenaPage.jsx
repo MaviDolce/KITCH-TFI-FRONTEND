@@ -5,21 +5,9 @@ import FilterChip from "../../components/explorar/FilterChip"
 import Button from "../../components/ui/Button"
 import SearchField from "../../components/ui/SearchField"
 import Spinner from "../../components/ui/Spinner"
-import { CATEGORIA_VARIOS, PANTRY_CATEGORIES } from "../../constants/pantryCategories"
+import { PANTRY_CATEGORIES } from "../../constants/pantryCategories"
 import { stockService } from "../../services/stockService"
-import { stepForUnidad } from "../../utils/stock"
-
-function groupByCategoria(items) {
-  const groups = new Map()
-  for (const item of items) {
-    const key = item.categoria || CATEGORIA_VARIOS
-    if (!groups.has(key)) {
-      groups.set(key, [])
-    }
-    groups.get(key).push(item)
-  }
-  return groups
-}
+import { agruparPorCategoria, proximaCantidad } from "../../utils/stock"
 
 function AlacenaPage() {
   const [items, setItems] = useState([])
@@ -27,6 +15,8 @@ function AlacenaPage() {
   const [filtro, setFiltro] = useState("")
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState(null)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     let active = true
@@ -36,6 +26,11 @@ function AlacenaPage() {
       .then((list) => {
         if (active) {
           setItems(list)
+        }
+      })
+      .catch((err) => {
+        if (active) {
+          setError(err.message)
         }
       })
       .finally(() => {
@@ -58,14 +53,14 @@ function AlacenaPage() {
     })
   }, [filtro, items, query])
 
-  const groups = useMemo(() => groupByCategoria(visible), [visible])
-  const categoryOrder = [
-    ...PANTRY_CATEGORIES.map((categoria) => categoria.id),
-    CATEGORIA_VARIOS,
-  ]
+  const groups = useMemo(() => agruparPorCategoria(visible), [visible])
 
   function handleChip(id) {
     setFiltro((current) => (current === id ? "" : id))
+  }
+
+  function mergeItem(id, updated) {
+    setItems((current) => current.map((row) => (row.id === id ? { ...row, ...updated } : row)))
   }
 
   async function handleCreate(payload) {
@@ -77,34 +72,44 @@ function AlacenaPage() {
     setShowForm(false)
   }
 
-  async function handleIncrement(item) {
-    const updated = await stockService.actualizar(item.id, {
-      cantidad: item.cantidad + stepForUnidad(item.unidadMedida),
-      unidadMedida: item.unidadMedida,
+  async function handleEdit(payload) {
+    const updated = await stockService.actualizar(editing.id, {
+      cantidad: payload.cantidad,
+      unidadMedida: payload.unidadMedida,
+      fechaCaducidad: payload.fechaCaducidad ?? editing.fechaCaducidad,
     })
-    if (updated) {
-      setItems((current) =>
-        current.map((row) => (row.id === item.id ? { ...row, ...updated } : row)),
-      )
+    mergeItem(editing.id, updated)
+    setEditing(null)
+  }
+
+  async function handleStep(item, direccion) {
+    setError("")
+    const next = proximaCantidad(item, direccion)
+    try {
+      if (next <= 0) {
+        await stockService.eliminar(item.id)
+        setItems((current) => current.filter((row) => row.id !== item.id))
+        return
+      }
+      const updated = await stockService.actualizar(item.id, {
+        cantidad: next,
+        unidadMedida: item.unidadMedida,
+        fechaCaducidad: item.fechaCaducidad,
+      })
+      mergeItem(item.id, updated)
+    } catch (err) {
+      setError(err.message)
     }
   }
 
-  async function handleDecrement(item) {
-    const next = item.cantidad - stepForUnidad(item.unidadMedida)
-    if (next <= 0) {
-      await stockService.eliminar(item.id)
-      setItems((current) => current.filter((row) => row.id !== item.id))
-      return
-    }
-    const updated = await stockService.actualizar(item.id, {
-      cantidad: next,
-      unidadMedida: item.unidadMedida,
-    })
-    if (updated) {
-      setItems((current) =>
-        current.map((row) => (row.id === item.id ? { ...row, ...updated } : row)),
-      )
-    }
+  function openCreate() {
+    setEditing(null)
+    setShowForm((open) => !open)
+  }
+
+  function openEdit(item) {
+    setShowForm(false)
+    setEditing(item)
   }
 
   return (
@@ -114,7 +119,7 @@ function AlacenaPage() {
           <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">Mi alacena</h1>
           <p className="mt-2 text-base text-muted">Todo lo que tenés disponible para cocinar.</p>
         </div>
-        <Button type="button" size="md" onClick={() => setShowForm((open) => !open)}>
+        <Button type="button" size="md" onClick={openCreate}>
           Agregar ingrediente
         </Button>
       </header>
@@ -148,6 +153,23 @@ function AlacenaPage() {
         </div>
       ) : null}
 
+      {editing ? (
+        <div className="mt-6 max-w-3xl">
+          <AddStockForm
+            key={editing.id}
+            item={editing}
+            onSubmit={handleEdit}
+            onCancel={() => setEditing(null)}
+          />
+        </div>
+      ) : null}
+
+      {error ? (
+        <p className="mt-6 text-sm text-primary" role="alert">
+          {error}
+        </p>
+      ) : null}
+
       {loading ? (
         <div className="mt-10 flex justify-center" role="status" aria-label="Cargando alacena">
           <Spinner size={24} className="text-primary" />
@@ -160,11 +182,7 @@ function AlacenaPage() {
         </p>
       ) : (
         <div className="mt-8 grid gap-8">
-          {categoryOrder.map((categoria) => {
-            const group = groups.get(categoria)
-            if (!group?.length) {
-              return null
-            }
+          {groups.map(({ categoria, items: group }) => {
             return (
               <section key={categoria} aria-labelledby={`cat-${categoria}`}>
                 <h2
@@ -178,8 +196,9 @@ function AlacenaPage() {
                     <li key={item.id}>
                       <StockItemCard
                         item={item}
-                        onIncrement={handleIncrement}
-                        onDecrement={handleDecrement}
+                        onIncrement={(row) => handleStep(row, 1)}
+                        onDecrement={(row) => handleStep(row, -1)}
+                        onEdit={openEdit}
                       />
                     </li>
                   ))}

@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Check, Minus } from "lucide-react"
 import SubstitutePicker from "../cocinar/SubstitutePicker"
+import Spinner from "../ui/Spinner"
 import TextLink from "../ui/TextLink"
 import { formatCantidadAjustada } from "../../utils/porciones"
 
@@ -9,11 +10,19 @@ function formatCantidad(ingrediente) {
   return `${formatCantidadAjustada(cantidad)} ${ingrediente.unidad}`
 }
 
-function IngredientRow({ ingrediente, selected, onSelect }) {
+function IngredientRow({ ingrediente, selected, sugerencias, onBuscar, onSelect }) {
   const [open, setOpen] = useState(Boolean(selected))
-  const sustitutos = ingrediente.sustitutos ?? []
-  const hasSustitutos = sustitutos.length > 0
   const nombre = ingrediente.nombreMostrado ?? ingrediente.nombre
+  const cargando = sugerencias?.loading
+  const items = sugerencias?.items
+
+  function handleToggle() {
+    const next = !open
+    setOpen(next)
+    if (next && !items && !cargando) {
+      onBuscar(ingrediente)
+    }
+  }
 
   return (
     <li className="rounded-2xl bg-canvas px-4 py-3">
@@ -32,28 +41,44 @@ function IngredientRow({ ingrediente, selected, onSelect }) {
             {ingrediente.reemplazaA ? (
               <span className="block text-xs text-muted">en lugar de {ingrediente.reemplazaA}</span>
             ) : null}
+            {ingrediente.cantidadFaltante > 0 ? (
+              <span className="block text-xs font-medium text-primary">
+                Te faltan {formatCantidadAjustada(ingrediente.cantidadFaltante)} {ingrediente.unidad}
+              </span>
+            ) : null}
           </span>
         </span>
         <span className="shrink-0 text-sm text-muted">{formatCantidad(ingrediente)}</span>
       </div>
 
-      {hasSustitutos && onSelect ? (
+      {onBuscar && onSelect ? (
         <div className="mt-2 pl-11">
-          <TextLink
-            type="button"
-            aria-expanded={open}
-            onClick={() => setOpen((current) => !current)}
-          >
-            {open ? "Ocultar reemplazos" : selected ? `Usando ${selected.nombre}` : "Ver reemplazos"}
+          <TextLink type="button" aria-expanded={open} onClick={handleToggle}>
+            {open ? "Ocultar reemplazos" : selected ? `Usando ${selected.nombre}` : "Buscar reemplazos"}
           </TextLink>
           {open ? (
-            <SubstitutePicker
-              embedded
-              ingrediente={ingrediente.nombre}
-              sustitutos={sustitutos}
-              selected={selected}
-              onSelect={(item) => onSelect(ingrediente.nombre, item)}
-            />
+            cargando ? (
+              <p className="mt-3 inline-flex items-center gap-2 text-sm text-muted" role="status">
+                <Spinner size={16} className="text-primary" />
+                Buscando reemplazos…
+              </p>
+            ) : sugerencias?.error ? (
+              <p className="mt-3 text-sm text-primary" role="alert">
+                {sugerencias.error}{" "}
+                <TextLink type="button" className="inline" onClick={() => onBuscar(ingrediente)}>
+                  Reintentar
+                </TextLink>
+              </p>
+            ) : items ? (
+              <SubstitutePicker
+                embedded
+                ingrediente={ingrediente.nombre}
+                sustitutos={items}
+                selected={selected}
+                busyId={sugerencias?.aplicando ?? null}
+                onSelect={(item) => onSelect(ingrediente, item)}
+              />
+            ) : null
           ) : null}
         </div>
       ) : null}
@@ -61,14 +86,16 @@ function IngredientRow({ ingrediente, selected, onSelect }) {
   )
 }
 
-function IngredientList({ ingredientes, replacements = {}, onSelectReplacement }) {
+function IngredientList({ ingredientes, replacements = {}, sugerencias = {}, onBuscar, onSelectReplacement }) {
   return (
     <ul className="grid gap-2">
       {ingredientes.map((ingrediente) => (
         <IngredientRow
           key={ingrediente.ingredienteId ?? ingrediente.nombre}
           ingrediente={ingrediente}
-          selected={replacements[ingrediente.nombre]}
+          selected={replacements[ingrediente.ingredienteId]}
+          sugerencias={sugerencias[ingrediente.ingredienteId]}
+          onBuscar={onBuscar}
           onSelect={onSelectReplacement}
         />
       ))}

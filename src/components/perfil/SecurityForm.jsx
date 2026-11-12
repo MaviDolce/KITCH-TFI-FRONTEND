@@ -2,6 +2,7 @@ import { useState } from "react"
 import Button from "../ui/Button"
 import Card from "../ui/Card"
 import TextField from "../ui/TextField"
+import { isValidPassword, PASSWORD_MIN_LENGTH } from "../../utils/validators"
 
 function SecurityForm({ onSubmit, onBack }) {
   const [form, setForm] = useState({
@@ -23,8 +24,8 @@ function SecurityForm({ onSubmit, onBack }) {
   function validate() {
     const next = {}
     if (!form.actual) next.actual = "Ingresá tu contraseña actual."
-    if (!form.nueva || form.nueva.length < 6) {
-      next.nueva = "La nueva contraseña debe tener al menos 6 caracteres."
+    if (!isValidPassword(form.nueva)) {
+      next.nueva = `La nueva contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres.`
     }
     if (form.nueva !== form.confirmacion) {
       next.confirmacion = "Las contraseñas no coinciden."
@@ -44,9 +45,9 @@ function SecurityForm({ onSubmit, onBack }) {
 
     setLoading(true)
     try {
-      await onSubmit({ actual: form.actual, nueva: form.nueva })
+      const result = await onSubmit({ actual: form.actual, nueva: form.nueva })
       setForm({ actual: "", nueva: "", confirmacion: "" })
-      setNotice("La contraseña se actualizó correctamente.")
+      setNotice(result?.message || "La contraseña se actualizó correctamente.")
     } catch (err) {
       setFormError(err.message)
     } finally {

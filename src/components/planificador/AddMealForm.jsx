@@ -5,14 +5,33 @@ import Card from "../ui/Card"
 import SelectField from "../ui/SelectField"
 import TextField from "../ui/TextField"
 
-function AddMealForm({ recetas, initial, onSubmit, onCancel, error }) {
+function AddMealForm({
+  recetas,
+  initial,
+  onSubmit,
+  onCancel,
+  error,
+  conflictMessage,
+  onConfirmReplace,
+  onDismissConflict,
+}) {
   const [form, setForm] = useState({
     recetaId: initial.recetaId ? String(initial.recetaId) : "",
     fechaAsignada: initial.fechaAsignada,
     turno: initial.turno,
   })
   const [loading, setLoading] = useState(false)
+  const [replacing, setReplacing] = useState(false)
   const editing = Boolean(initial.id)
+
+  async function handleReplace() {
+    setReplacing(true)
+    try {
+      await onConfirmReplace()
+    } finally {
+      setReplacing(false)
+    }
+  }
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -79,6 +98,20 @@ function AddMealForm({ recetas, initial, onSubmit, onCancel, error }) {
           <p className="text-sm text-primary" role="alert">
             {error}
           </p>
+        ) : null}
+
+        {conflictMessage ? (
+          <div className="grid gap-3 rounded-2xl bg-ai p-4" role="alertdialog" aria-label="Conflicto de planificación">
+            <p className="text-sm font-medium text-ink">{conflictMessage}</p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button type="button" size="md" className="flex-1" loading={replacing} onClick={handleReplace}>
+                Reemplazar
+              </Button>
+              <Button type="button" variant="outline" size="md" className="flex-1" onClick={onDismissConflict}>
+                Cancelar
+              </Button>
+            </div>
+          </div>
         ) : null}
 
         <div className="flex flex-col gap-2 sm:flex-row">

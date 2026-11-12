@@ -17,8 +17,10 @@ function SuscripcionPage() {
   const { user } = useAuth()
   const [suscripcion, setSuscripcion] = useState(null)
   const [pagos, setPagos] = useState([])
+  const [plan, setPlan] = useState(null)
   const [loading, setLoading] = useState(true)
   const [notice, setNotice] = useState("")
+  const [planError, setPlanError] = useState("")
 
   const isBasico = user?.rol === ROLES.basico
 
@@ -27,11 +29,18 @@ function SuscripcionPage() {
     Promise.all([
       suscripcionService.getMine().catch(() => null),
       suscripcionService.listarPagos().catch(() => []),
+      suscripcionService.getPlan().catch((err) => {
+        if (active) {
+          setPlanError(err.message)
+        }
+        return null
+      }),
     ])
-      .then(([data, historial]) => {
+      .then(([data, historial, planActual]) => {
         if (active) {
           setSuscripcion(data)
           setPagos(historial)
+          setPlan(planActual)
         }
       })
       .finally(() => {
@@ -46,7 +55,11 @@ function SuscripcionPage() {
 
   async function handleContratar(payload) {
     const result = await suscripcionService.contratar(payload)
-    setNotice(result.mensaje || "Iniciamos el checkout. El rol se actualiza cuando Mercado Pago confirma el pago.")
+    setNotice(result.mensaje)
+    if (!result.initPoint) {
+      throw new Error("Mercado Pago no devolvió el enlace de pago. Intentá de nuevo.")
+    }
+    window.location.assign(result.initPoint)
     return result
   }
 
@@ -82,7 +95,7 @@ function SuscripcionPage() {
             />
             <PlanCard
               title="Kitch Premium"
-              price={`${formatMoney(PREMIUM_PLAN.monto)} / ${PREMIUM_PLAN.periodo}`}
+              price={plan ? `${formatMoney(plan.monto, plan.moneda)} / ${PREMIUM_PLAN.periodo}` : "—"}
               hint="Rol Profesional. Vigencia de 30 días."
               features={PLAN_PREMIUM_FEATURES}
               featured
@@ -93,7 +106,12 @@ function SuscripcionPage() {
           <div className="relative mt-8">
             {isBasico ? (
               <>
-                <PaymentForm onSubmit={handleContratar} />
+                <PaymentForm plan={plan} onSubmit={handleContratar} />
+                {planError ? (
+                  <p className="mt-4 max-w-xl text-sm text-primary" role="alert">
+                    {planError}
+                  </p>
+                ) : null}
                 {notice ? (
                   <p className="mt-4 max-w-xl text-sm text-success" role="status">
                     {notice}

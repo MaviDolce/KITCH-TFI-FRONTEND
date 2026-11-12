@@ -1,7 +1,7 @@
 import { mapUserFromApi } from "../api/mappers/user"
 import { http } from "../api/http"
 import {
-  clearSessionToken,
+  clearAllSessionData,
   getPendingTwoFactor as readPendingTwoFactor,
   setPendingTwoFactor as writePendingTwoFactor,
   setSessionToken,
@@ -12,20 +12,24 @@ async function loadPerfil() {
   return mapUserFromApi(data)
 }
 
+function storePendingTwoFactor(data) {
+  const pending = {
+    email: data.email,
+    emailEnmascarado: data.emailEnmascarado,
+    mensaje: data.mensaje,
+    requiresTwoFactor: data.requiresTwoFactor !== false,
+  }
+  writePendingTwoFactor(pending)
+  return pending
+}
+
 export const authService = {
   async login(payload) {
     const { data } = await http.post("/api/Auth/login", {
       usuarioOMail: payload.usuarioOMail,
       password: payload.password,
     })
-    const pending = {
-      email: data.email,
-      emailEnmascarado: data.emailEnmascarado,
-      mensaje: data.mensaje,
-      requiresTwoFactor: data.requiresTwoFactor !== false,
-    }
-    writePendingTwoFactor(pending)
-    return pending
+    return storePendingTwoFactor(data)
   },
 
   async verifyTwoFactor(codigo) {
@@ -42,6 +46,15 @@ export const authService = {
     return loadPerfil()
   },
 
+  async resendTwoFactor() {
+    const pending = readPendingTwoFactor()
+    if (!pending?.email) {
+      throw new Error("No hay un código de verificación pendiente.")
+    }
+    const { data } = await http.post("/api/Auth/resend-2fa", { email: pending.email })
+    return storePendingTwoFactor({ ...data, email: pending.email })
+  },
+
   async register(payload) {
     const { data } = await http.post("/api/Auth/register", {
       nombre: payload.nombre,
@@ -51,9 +64,7 @@ export const authService = {
       password: payload.password,
       preferenciaDietetica: payload.preferenciaDietetica,
     })
-    setSessionToken(data.token, data.expiresAt)
-    writePendingTwoFactor(null)
-    return loadPerfil()
+    return storePendingTwoFactor(data)
   },
 
   async emailExiste(email) {
@@ -73,22 +84,32 @@ export const authService = {
     return { message: data.message }
   },
 
+  async changePassword({ actual, nueva }) {
+    const { data } = await http.put("/api/Auth/cambiar-password", {
+      passwordActual: actual,
+      nuevaPassword: nueva,
+    })
+    return { message: data.message }
+  },
+
+  async refreshSession() {
+    const { data } = await http.post("/api/Auth/refresh")
+    setSessionToken(data.token, data.expiresAt)
+    return loadPerfil()
+  },
+
   getPendingTwoFactor: readPendingTwoFactor,
 
   logout() {
-    clearSessionToken()
-    writePendingTwoFactor(null)
+    clearAllSessionData()
   },
 
   getMe: loadPerfil,
 
   async updateMe(payload) {
-    await http.put("/api/Perfil/me", {
+    const { data } = await http.put("/api/Auth/perfil", {
       nombre: payload.nombre,
       apellido: payload.apellido,
-      email: payload.email,
-    })
-    const { data } = await http.put("/api/Auth/perfil", {
       nombreUsuario: payload.nombreUsuario,
       preferenciaDietetica: payload.preferenciaDietetica,
     })
