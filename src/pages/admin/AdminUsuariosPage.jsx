@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { KeyRound, Lock, LockOpen } from "lucide-react"
+import { KeyRound, LockOpen, Trash2 } from "lucide-react"
 import Badge from "../../components/ui/Badge"
 import Button from "../../components/ui/Button"
 import Card from "../../components/ui/Card"
@@ -51,16 +51,14 @@ function AdminUsuariosPage() {
       if (accion === "recuperar") {
         const result = await adminService.enviarRecuperacion(usuario.id)
         setNotice(result.message)
+      } else if (accion === "eliminar") {
+        await adminService.eliminar(usuario.id)
+        setUsuarios((current) => current.filter((item) => item.id !== usuario.id))
+        setNotice(`La cuenta de ${usuario.nombreUsuario} fue borrada.`)
       } else {
-        const actualizado = usuario.activo
-          ? await adminService.bloquear(usuario.id)
-          : await adminService.desbloquear(usuario.id)
+        const actualizado = await adminService.desbloquear(usuario.id)
         setUsuarios((current) => reemplazarUsuario(current, actualizado))
-        setNotice(
-          actualizado.activo
-            ? `${actualizado.nombreUsuario} fue desbloqueado.`
-            : `${actualizado.nombreUsuario} fue bloqueado.`,
-        )
+        setNotice(`${actualizado.nombreUsuario} fue desbloqueado.`)
       }
     } catch (err) {
       setError(err.message)
@@ -125,15 +123,26 @@ function AdminUsuariosPage() {
                       variant="outline"
                       size="md"
                       loading={pendingId === usuario.id}
-                      onClick={() => ejecutar(usuario, "bloqueo")}
+                      onClick={() => {
+                        if (window.confirm(`¿Borrar la cuenta de ${usuario.nombreUsuario}? Se eliminan sus datos y no se puede deshacer.`)) {
+                          ejecutar(usuario, "eliminar")
+                        }
+                      }}
                     >
-                      {usuario.activo ? (
-                        <Lock size={16} aria-hidden="true" />
-                      ) : (
-                        <LockOpen size={16} aria-hidden="true" />
-                      )}
-                      {usuario.activo ? "Bloquear" : "Desbloquear"}
+                      <Trash2 size={16} aria-hidden="true" />
+                      Borrar cuenta
                     </Button>
+                    {!usuario.activo ? (
+                      <Button
+                        variant="outline"
+                        size="md"
+                        disabled={pendingId === usuario.id}
+                        onClick={() => ejecutar(usuario, "desbloqueo")}
+                      >
+                        <LockOpen size={16} aria-hidden="true" />
+                        Desbloquear
+                      </Button>
+                    ) : null}
                     <Button
                       variant="ghost"
                       size="md"

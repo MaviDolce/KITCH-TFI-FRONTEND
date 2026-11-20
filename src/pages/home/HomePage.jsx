@@ -10,8 +10,8 @@ import { recomendacionService } from "../../services/recomendacionService"
 const SHORTCUTS = [
   {
     to: ROUTES.explorar,
-    title: "Recetas para hoy",
-    description: "Ver recetas disponibles.",
+    title: "Recetas",
+    description: "Todas las que generaste.",
     accent: "primary",
   },
   {

@@ -1,4 +1,4 @@
-import { CheckCircle2, ChefHat, Clock, Heart } from "lucide-react"
+import { CheckCircle2, ChefHat, Clock, Heart, Trash2 } from "lucide-react"
 import Button from "../ui/Button"
 import Card from "../ui/Card"
 import IconButton from "../ui/IconButton"
@@ -14,7 +14,7 @@ const TONES = {
   primary: "bg-primary/10 text-primary",
 }
 
-function RecipeCard({ receta, favorite, onToggleFavorite }) {
+function RecipeCard({ receta, favorite, onToggleFavorite, onDelete }) {
   const cover = TONES[receta.tone] ?? TONES.ai
 
   return (
@@ -26,13 +26,20 @@ function RecipeCard({ receta, favorite, onToggleFavorite }) {
       <div className="flex flex-1 flex-col p-5">
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-lg font-bold tracking-tight text-ink">{receta.titulo}</h3>
-          <IconButton
-            label={favorite ? "Quitar de favoritos" : "Agregar a favoritos"}
-            onClick={() => onToggleFavorite(receta.recetaId)}
-            className={favorite ? "text-primary" : undefined}
-          >
-            <Heart size={18} fill={favorite ? "currentColor" : "none"} />
-          </IconButton>
+          <div className="flex shrink-0 items-center">
+            {onDelete ? (
+              <IconButton label="Eliminar receta" onClick={() => onDelete(receta)} className="text-primary">
+                <Trash2 size={18} />
+              </IconButton>
+            ) : null}
+            <IconButton
+              label={favorite ? "Quitar de favoritos" : "Agregar a favoritos"}
+              onClick={() => onToggleFavorite(receta.recetaId)}
+              className={favorite ? "text-primary" : undefined}
+            >
+              <Heart size={18} fill={favorite ? "currentColor" : "none"} />
+            </IconButton>
+          </div>
         </div>
 
         <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">

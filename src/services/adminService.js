@@ -34,6 +34,10 @@ export const adminService = {
     return mapUsuario(data)
   },
 
+  async eliminar(id) {
+    await http.delete(`/api/Usuarios/${id}`)
+  },
+
   async enviarRecuperacion(id) {
     const { data } = await http.post(`/api/Admin/usuarios/${id}/recuperar-password`)
     return { message: data.message }

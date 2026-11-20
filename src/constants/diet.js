@@ -3,4 +3,5 @@ export const DIET_OPTIONS = [
   { value: "Vegetariano", label: "Vegetariano" },
   { value: "Vegano", label: "Vegano" },
   { value: "Celiaco", label: "Celíaco" },
+  { value: "Diabetico", label: "Diabético" },
 ]

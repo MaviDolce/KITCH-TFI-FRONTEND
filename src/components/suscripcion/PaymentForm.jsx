@@ -1,11 +1,9 @@
 import { useState } from "react"
 import Button from "../ui/Button"
 import Card from "../ui/Card"
-import SelectField from "../ui/SelectField"
-import { METODOS_PAGO, PREMIUM_PLAN, formatMoney } from "../../constants/subscription"
+import { PREMIUM_PLAN, formatMoney } from "../../constants/subscription"
 
 function PaymentForm({ plan, onSubmit }) {
-  const [metodoPago, setMetodoPago] = useState("TarjetaCredito")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -16,7 +14,6 @@ function PaymentForm({ plan, onSubmit }) {
     try {
       await onSubmit({
         tipo: plan?.tipo || PREMIUM_PLAN.tipo,
-        metodoPago,
       })
     } catch (err) {
       setError(err.message)
@@ -33,18 +30,18 @@ function PaymentForm({ plan, onSubmit }) {
       </p>
 
       <form className="mt-6 grid gap-4" onSubmit={handleSubmit}>
-        <SelectField
-          label="Medio de pago"
-          name="metodoPago"
-          value={metodoPago}
-          onChange={(event) => setMetodoPago(event.target.value)}
-        >
-          {METODOS_PAGO.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </SelectField>
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-primary bg-primary/5 px-4 py-3">
+          <div>
+            <p className="text-sm font-semibold text-ink">Mercado Pago</p>
+            <p className="text-xs text-muted">
+              Tarjetas, dinero en cuenta y otros medios disponibles dentro de Mercado Pago.
+            </p>
+          </div>
+          <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+            Seleccionado
+          </span>
+        </div>
+        <p className="text-xs text-muted">Próximamente vamos a sumar otros medios de pago.</p>
 
         {error ? (
           <p className="text-sm text-primary" role="alert">

@@ -68,6 +68,9 @@ export function AuthProvider({ children }) {
       async login(credentials) {
         const result = await authService.login(credentials)
         setPendingTwoFactor(authService.getPendingTwoFactor())
+        if (result.requiresTwoFactor === false) {
+          setUser(result.user)
+        }
         return result
       },
       async verifyTwoFactor(code) {

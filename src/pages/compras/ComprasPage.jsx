@@ -10,7 +10,6 @@ import { agruparPorCategoria, stepForUnidad } from "../../utils/stock"
 const FILTERS = {
   todos: "todos",
   pendientes: "pendientes",
-  comprados: "comprados",
 }
 
 function ComprasPage() {
@@ -50,7 +49,6 @@ function ComprasPage() {
   }, [])
 
   const pendientes = items.filter((item) => !item.estaComprado)
-  const comprados = items.filter((item) => item.estaComprado)
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase()
@@ -58,8 +56,7 @@ function ComprasPage() {
       const matchesQuery = !needle || item.nombreArticulo.toLowerCase().includes(needle)
       const matchesFilter =
         filtro === FILTERS.todos ||
-        (filtro === FILTERS.pendientes && !item.estaComprado) ||
-        (filtro === FILTERS.comprados && item.estaComprado)
+        (filtro === FILTERS.pendientes && !item.estaComprado)
       return matchesQuery && matchesFilter
     })
   }, [filtro, items, query])
@@ -90,7 +87,7 @@ function ComprasPage() {
       if (!item.estaComprado) {
         await listaCompraService.marcarComprado(item.id)
         setItems(await listaCompraService.listar())
-        setNotice(`Marcamos ${item.nombreArticulo} como comprado y lo sumamos a tu alacena.`)
+        setNotice(`Sumamos ${item.nombreArticulo} a tu alacena y lo sacamos de la lista.`)
         return
       }
       await listaCompraService.actualizar(item.id, {
@@ -189,16 +186,6 @@ function ComprasPage() {
           }`}
         >
           {pendientes.length} {pendientes.length === 1 ? "pendiente" : "pendientes"}
-        </button>
-        <button
-          type="button"
-          aria-pressed={filtro === FILTERS.comprados}
-          onClick={() => setFiltro(FILTERS.comprados)}
-          className={`inline-flex h-11 shrink-0 items-center rounded-full px-4 text-sm font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
-            filtro === FILTERS.comprados ? "bg-primary/10 text-primary" : "bg-surface text-ink shadow-sm"
-          }`}
-        >
-          {comprados.length} {comprados.length === 1 ? "comprado" : "comprados"}
         </button>
       </div>
 

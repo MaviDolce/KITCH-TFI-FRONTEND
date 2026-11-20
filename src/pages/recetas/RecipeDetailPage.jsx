@@ -8,10 +8,12 @@ import {
   Flame,
   Heart,
   ShoppingCart,
+  Trash2,
   Users,
 } from "lucide-react"
 import PortionStepper from "../../components/cocinar/PortionStepper"
 import IngredientList from "../../components/recipes/IngredientList"
+import MissingIngredientsChecklist from "../../components/recipes/MissingIngredientsChecklist"
 import Button from "../../components/ui/Button"
 import Card from "../../components/ui/Card"
 import IconButton from "../../components/ui/IconButton"
@@ -20,6 +22,7 @@ import TextLink from "../../components/ui/TextLink"
 import { planificarPath, cocinarPath } from "../../constants/paths"
 import { ROUTES } from "../../constants/routes"
 import { ApiError } from "../../api/errors"
+import { useAuth } from "../../hooks/useAuth"
 import { useTransientNotice } from "../../hooks/useTransientNotice"
 import { favoritosService } from "../../services/favoritosService"
 import { preparacionService } from "../../services/preparacionService"
@@ -27,7 +30,7 @@ import { recetasService } from "../../services/recetasService"
 import { sustitutosService } from "../../services/sustitutosService"
 import { buildCookState, buildReplacement, toSustituciones } from "../../utils/cookSession"
 import { formatDificultad } from "../../utils/dificultad"
-import { filasIngredientes, formatCantidadAjustada } from "../../utils/porciones"
+import { filasIngredientes } from "../../utils/porciones"
 
 const PREVIEW_DEBOUNCE_MS = 350
 
@@ -42,6 +45,7 @@ const TONES = {
 function RecipeDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [receta, setReceta] = useState(null)
   const [loadedId, setLoadedId] = useState(null)
   const [favorite, setFavorite] = useState(false)
@@ -51,10 +55,13 @@ function RecipeDetailPage() {
   const [preview, setPreview] = useState(null)
   const [previewError, setPreviewError] = useState("")
   const [agregando, setAgregando] = useState(false)
+  const [marcandoId, setMarcandoId] = useState(null)
+  const [eliminando, setEliminando] = useState(false)
   const [planError, setPlanError] = useState("")
   const [actionError, setActionError] = useState("")
   const [notice, showNotice] = useTransientNotice()
   const loading = loadedId !== String(id)
+  const esPropia = Boolean(receta?.usuarioId && user?.id && receta.usuarioId === user.id)
 
   useEffect(() => {
     let active = true
@@ -150,6 +157,25 @@ function RecipeDetailPage() {
     }
   }
 
+  async function handleEliminarReceta() {
+    if (!receta || !esPropia || eliminando) {
+      return
+    }
+    const ok = window.confirm(`¿Eliminar la receta "${receta.titulo}"? Esta acción no se puede deshacer.`)
+    if (!ok) {
+      return
+    }
+    setActionError("")
+    setEliminando(true)
+    try {
+      await recetasService.eliminar(receta.recetaId)
+      navigate(ROUTES.favoritos, { replace: true })
+    } catch (error) {
+      setActionError(error.message)
+      setEliminando(false)
+    }
+  }
+
   function actualizarSugerencia(ingredienteId, patch) {
     setSugerencias((current) => ({
       ...current,
@@ -220,6 +246,28 @@ function RecipeDetailPage() {
     }
   }
 
+  async function handleMarcarDisponible(item) {
+    if (!receta) {
+      return
+    }
+    setActionError("")
+    setMarcandoId(item.ingredienteId)
+    try {
+      const actualizado = await preparacionService.marcarFaltanteDisponible({
+        recetaId: receta.recetaId,
+        ingredienteId: item.ingredienteId,
+        nuevasPorciones: porciones,
+        sustituciones,
+      })
+      setPreview(actualizado)
+      showNotice(`Sumamos ${item.nombre} a tu alacena.`)
+    } catch (error) {
+      setActionError(error.message)
+    } finally {
+      setMarcandoId(null)
+    }
+  }
+
   function handleCocinar() {
     if (!receta) {
       return
@@ -283,13 +331,25 @@ function RecipeDetailPage() {
               <h1 className="text-3xl font-bold tracking-tight text-ink">{receta.titulo}</h1>
               <p className="mt-2 text-base leading-relaxed text-muted">{receta.descripcion}</p>
             </div>
-            <IconButton
-              label={favorite ? "Quitar de favoritos" : "Agregar a favoritos"}
-              onClick={handleToggleFavorite}
-              className={favorite ? "text-primary" : undefined}
-            >
-              <Heart size={20} fill={favorite ? "currentColor" : "none"} />
-            </IconButton>
+            <div className="flex shrink-0 items-center gap-1">
+              {esPropia ? (
+                <IconButton
+                  label="Eliminar receta"
+                  onClick={handleEliminarReceta}
+                  disabled={eliminando}
+                  className="text-primary"
+                >
+                  <Trash2 size={20} />
+                </IconButton>
+              ) : null}
+              <IconButton
+                label={favorite ? "Quitar de favoritos" : "Agregar a favoritos"}
+                onClick={handleToggleFavorite}
+                className={favorite ? "text-primary" : undefined}
+              >
+                <Heart size={20} fill={favorite ? "currentColor" : "none"} />
+              </IconButton>
+            </div>
           </div>
 
           <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted">
@@ -370,16 +430,19 @@ function RecipeDetailPage() {
 
         {faltantes.length > 0 ? (
           <div className="mt-4 grid gap-3 rounded-2xl bg-ai p-4" role="alert">
-            <p className="text-sm font-semibold text-ink">
-              Para {porciones} porciones te falta:
-            </p>
-            <ul className="grid gap-1 text-sm text-muted">
-              {faltantes.map((item) => (
-                <li key={item.ingredienteId}>
-                  {item.nombre}: {formatCantidadAjustada(item.cantidadFaltante)} {item.unidadMedida}
-                </li>
-              ))}
-            </ul>
+            <div>
+              <p className="text-sm font-semibold text-ink">
+                Para {porciones} porciones te falta:
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                Tildá lo que ya conseguiste y lo sumamos a tu alacena.
+              </p>
+            </div>
+            <MissingIngredientsChecklist
+              faltantes={faltantes}
+              marcandoId={marcandoId}
+              onMarcar={handleMarcarDisponible}
+            />
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <Button type="button" size="md" loading={agregando} onClick={handleAgregarFaltantes}>
                 <ShoppingCart size={16} aria-hidden="true" />

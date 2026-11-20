@@ -1,19 +1,6 @@
 import { http } from "../api/http"
 
-const METODO_PAGO = {
-  TarjetaCredito: 1,
-  TarjetaDebito: 2,
-  TransferenciaBancaria: 3,
-  BilleteraVirtual: 4,
-  PayPal: 5,
-}
-
-function toMetodoPago(value) {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value
-  }
-  return METODO_PAGO[value] ?? 1
-}
+const METODO_PAGO_NO_ESPECIFICADO = 0
 
 export const suscripcionService = {
   async getMine() {
@@ -34,7 +21,7 @@ export const suscripcionService = {
   async contratar(payload) {
     const { data } = await http.post("/api/Suscripciones/contratar", {
       tipo: payload.tipo,
-      metodoPago: toMetodoPago(payload.metodoPago),
+      metodoPago: METODO_PAGO_NO_ESPECIFICADO,
     })
     return data
   },
@@ -42,6 +29,17 @@ export const suscripcionService = {
   async confirmarPago(paymentId) {
     const { data } = await http.post("/api/Suscripciones/confirmar-pago", { paymentId: String(paymentId) })
     return data
+  },
+
+  async verificarPagos() {
+    const { data } = await http.post("/api/Suscripciones/verificar-pagos")
+    return {
+      pagosAplicados: Number(data?.pagosAplicados ?? 0),
+      rolActual: data?.rolActual ?? "",
+      requiereRefrescarSesion: Boolean(data?.requiereRefrescarSesion),
+      profesionalHasta: data?.profesionalHasta ?? null,
+      mensaje: data?.mensaje ?? "",
+    }
   },
 
   async listarPagos() {

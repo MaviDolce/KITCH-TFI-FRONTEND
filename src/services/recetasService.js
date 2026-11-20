@@ -62,4 +62,8 @@ export const recetasService = {
       throw error
     }
   },
+
+  async eliminar(id) {
+    await http.delete(`/api/Recetas/${id}`)
+  },
 }

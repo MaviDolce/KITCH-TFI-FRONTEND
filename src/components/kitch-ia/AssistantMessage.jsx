@@ -1,7 +1,8 @@
 import { Sparkles } from "lucide-react"
 import RecipeCard from "../recipes/RecipeCard"
+import GeneratedRecipeCard from "./GeneratedRecipeCard"
 import SubstitutionList from "./SubstitutionList"
-function AssistantMessage({ message, favorites, onToggleFavorite }) {
+function AssistantMessage({ message, favorites, onToggleFavorite, onRecipeSaved }) {
   const receta = message.receta ?? null
   const recomendaciones = message.recomendaciones ?? []
 
@@ -17,11 +18,15 @@ function AssistantMessage({ message, favorites, onToggleFavorite }) {
 
       {receta ? (
         <div className="max-w-md">
-          <RecipeCard
-            receta={receta}
-            favorite={favorites.includes(receta.recetaId)}
-            onToggleFavorite={onToggleFavorite}
-          />
+          {receta.recetaId ? (
+            <RecipeCard
+              receta={receta}
+              favorite={favorites.includes(receta.recetaId)}
+              onToggleFavorite={onToggleFavorite}
+            />
+          ) : (
+            <GeneratedRecipeCard receta={receta} onSaved={onRecipeSaved} />
+          )}
         </div>
       ) : null}
 

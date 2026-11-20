@@ -13,7 +13,7 @@ import { ROUTES } from "./routes"
 
 export const NAV_ITEMS = [
   { to: ROUTES.home, label: "Inicio", icon: Home, end: true },
-  { to: ROUTES.explorar, label: "Explorar", icon: Search },
+  { to: ROUTES.explorar, label: "Recetas", icon: Search },
   { to: ROUTES.alacena, label: "Mi alacena", icon: CookingPot },
   { to: ROUTES.kitchIa, label: "Kitch IA", icon: Sparkles },
   { to: ROUTES.planificador, label: "Planificador", icon: LayoutGrid },

@@ -28,7 +28,11 @@ function LoginPage() {
 
     setLoading(true)
     try {
-      await login({ usuarioOMail, password })
+      const result = await login({ usuarioOMail, password })
+      if (result.requiresTwoFactor === false) {
+        navigate(location.state?.from?.pathname ?? ROUTES.home, { replace: true })
+        return
+      }
       navigate(ROUTES.verifyCode, {
         replace: true,
         state: { from: location.state?.from },

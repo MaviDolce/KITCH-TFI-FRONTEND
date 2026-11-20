@@ -5,11 +5,13 @@ import RecipeCard from "../../components/recipes/RecipeCard"
 import SearchField from "../../components/ui/SearchField"
 import Spinner from "../../components/ui/Spinner"
 import { RECIPE_FILTERS } from "../../constants/recipeFilters"
+import { useAuth } from "../../hooks/useAuth"
 import { useTransientNotice } from "../../hooks/useTransientNotice"
 import { favoritosService } from "../../services/favoritosService"
 import { filterRecipes, recetasService } from "../../services/recetasService"
 
 function ExplorarPage() {
+  const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const query = searchParams.get("q") ?? ""
   const [filtro, setFiltro] = useState("todas")
@@ -51,6 +53,14 @@ function ExplorarPage() {
     () => filterRecipes(recetas, { query, filtro }),
     [filtro, query, recetas],
   )
+  const propias = useMemo(
+    () => visible.filter((receta) => Number(receta.usuarioId) > 0 && Number(receta.usuarioId) === Number(user?.id)),
+    [user?.id, visible],
+  )
+  const catalogo = useMemo(
+    () => visible.filter((receta) => !(Number(receta.usuarioId) > 0 && Number(receta.usuarioId) === Number(user?.id))),
+    [user?.id, visible],
+  )
 
   function handleQueryChange(event) {
     const value = event.target.value
@@ -63,6 +73,24 @@ function ExplorarPage() {
 
   function handleSearch(event) {
     event.preventDefault()
+  }
+
+  async function handleEliminar(receta) {
+    if (!receta?.usuarioId || receta.usuarioId !== user?.id) {
+      return
+    }
+    const ok = window.confirm(`¿Eliminar la receta "${receta.titulo}"? Esta acción no se puede deshacer.`)
+    if (!ok) {
+      return
+    }
+    setActionError("")
+    try {
+      await recetasService.eliminar(receta.recetaId)
+      setRecetas((current) => current.filter((item) => item.recetaId !== receta.recetaId))
+      showNotice("Eliminamos la receta.")
+    } catch (error) {
+      setActionError(error.message)
+    }
   }
 
   async function handleToggleFavorite(recetaId) {
@@ -92,9 +120,8 @@ function ExplorarPage() {
       />
 
       <header className="relative">
-        <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">
-          Explorar recetas
-        </h1>
+        <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">Recetas</h1>
+        <p className="mt-2 text-base text-muted">Todas las que generaste, más el catálogo.</p>
       </header>
 
       <form className="relative mt-6 max-w-3xl" onSubmit={handleSearch}>
@@ -126,8 +153,9 @@ function ExplorarPage() {
 
       <section className="relative mt-8" aria-labelledby="recetas-title">
         <h2 id="recetas-title" className="text-xl font-bold tracking-tight text-ink">
-          Recetas para vos
+          Recetas
         </h2>
+        <p className="mt-1 text-sm text-muted">Las que generaste. Borrarlas de acá no es lo mismo que sacarlas de favoritos.</p>
 
         {actionError ? (
           <p className="mt-4 text-sm text-primary" role="alert">
@@ -152,13 +180,37 @@ function ExplorarPage() {
           <p className="mt-6 text-base text-primary" role="alert">
             {loadError}
           </p>
-        ) : visible.length === 0 ? (
+        ) : propias.length === 0 ? (
           <p className="mt-6 text-base text-muted">
-            No encontramos recetas con esa búsqueda o filtro.
+            {recetas.some((receta) => Number(receta.usuarioId) === Number(user?.id))
+              ? "No encontramos recetas tuyas con esa búsqueda."
+              : "Todavía no generaste recetas con Kitch IA."}
           </p>
         ) : (
           <ul className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {visible.map((receta) => (
+            {propias.map((receta) => (
+              <li key={receta.recetaId}>
+                <RecipeCard
+                  receta={receta}
+                  favorite={favorites.includes(receta.recetaId)}
+                  onToggleFavorite={handleToggleFavorite}
+                  onDelete={handleEliminar}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="relative mt-10" aria-labelledby="catalogo-title">
+        <h2 id="catalogo-title" className="text-xl font-bold tracking-tight text-ink">
+          Catálogo
+        </h2>
+        {loading || loadError ? null : catalogo.length === 0 ? (
+          <p className="mt-6 text-base text-muted">No hay recetas del catálogo con esa búsqueda.</p>
+        ) : (
+          <ul className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {catalogo.map((receta) => (
               <li key={receta.recetaId}>
                 <RecipeCard
                   receta={receta}

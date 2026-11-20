@@ -5,7 +5,7 @@ import WeekGrid from "../../components/planificador/WeekGrid"
 import WeekNav from "../../components/planificador/WeekNav"
 import Card from "../../components/ui/Card"
 import Spinner from "../../components/ui/Spinner"
-import { TURNOS } from "../../constants/turnos"
+import { TURNOS_COMIDA } from "../../constants/turnos"
 import {
   PlanificadorConflictError,
   planificadorService,
@@ -13,11 +13,8 @@ import {
 import { recetasService } from "../../services/recetasService"
 import { addDays, parseDateKey, startOfWeek, toDateKey, weekDays } from "../../utils/week"
 
-function firstEmptyTurno(meals, fecha) {
-  const used = new Set(
-    meals.filter((meal) => meal.fechaAsignada === fecha).map((meal) => meal.turno),
-  )
-  return TURNOS.find((turno) => !used.has(turno)) ?? TURNOS[1]
+function turnoComida(turno) {
+  return TURNOS_COMIDA.includes(turno) ? turno : ""
 }
 
 function uniqueIngredients(meals, recetas) {
@@ -54,7 +51,7 @@ function PlanificadorPage() {
       ? {
           recetaId: recetaFromQuery.recetaId,
           fechaAsignada: todayKey,
-          turno: firstEmptyTurno(meals, todayKey),
+          turno: "",
         }
       : null
   const formDraft = draft ?? queryDraft
@@ -128,7 +125,7 @@ function PlanificadorPage() {
     setDraft({
       recetaId: recetaFromQuery?.recetaId ?? "",
       fechaAsignada: fecha,
-      turno,
+      turno: turnoComida(turno),
     })
   }
 
@@ -139,7 +136,7 @@ function PlanificadorPage() {
       id: meal.id,
       recetaId: meal.recetaId,
       fechaAsignada: meal.fechaAsignada,
-      turno: meal.turno,
+      turno: turnoComida(meal.turno),
     })
   }
 

@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import PaymentForm from "../../components/suscripcion/PaymentForm"
 import PlanCard from "../../components/suscripcion/PlanCard"
 import SubscriptionStatus from "../../components/suscripcion/SubscriptionStatus"
+import Button from "../../components/ui/Button"
 import Spinner from "../../components/ui/Spinner"
 import {
   PLAN_BASICO_FEATURES,
@@ -14,15 +15,49 @@ import { useAuth } from "../../hooks/useAuth"
 import { suscripcionService } from "../../services/suscripcionService"
 
 function SuscripcionPage() {
-  const { user } = useAuth()
+  const { user, refreshSession } = useAuth()
   const [suscripcion, setSuscripcion] = useState(null)
   const [pagos, setPagos] = useState([])
   const [plan, setPlan] = useState(null)
   const [loading, setLoading] = useState(true)
   const [notice, setNotice] = useState("")
   const [planError, setPlanError] = useState("")
+  const [verificando, setVerificando] = useState(false)
+  const [verificacion, setVerificacion] = useState(null)
+  const verificacionInicialRef = useRef(false)
 
   const isBasico = user?.rol === ROLES.basico
+  const isAdmin = user?.rol === ROLES.admin
+
+  const verificarPagos = useCallback(
+    async ({ silencioso }) => {
+      setVerificando(true)
+      try {
+        const resultado = await suscripcionService.verificarPagos()
+        if (resultado.requiereRefrescarSesion) {
+          await refreshSession()
+        }
+        if (!silencioso || resultado.pagosAplicados > 0) {
+          setVerificacion({ tipo: resultado.pagosAplicados > 0 ? "exito" : "info", mensaje: resultado.mensaje })
+        }
+      } catch (err) {
+        if (!silencioso) {
+          setVerificacion({ tipo: "error", mensaje: err.message })
+        }
+      } finally {
+        setVerificando(false)
+      }
+    },
+    [refreshSession],
+  )
+
+  useEffect(() => {
+    if (!user || isAdmin || verificacionInicialRef.current) {
+      return
+    }
+    verificacionInicialRef.current = true
+    verificarPagos({ silencioso: true })
+  }, [user, isAdmin, verificarPagos])
 
   useEffect(() => {
     let active = true
@@ -121,6 +156,28 @@ function SuscripcionPage() {
             ) : (
               <SubscriptionStatus user={user} suscripcion={suscripcion} pagos={pagos} notice={notice} />
             )}
+
+            {!isAdmin ? (
+              <div className="mt-6 grid max-w-xl gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  loading={verificando}
+                  onClick={() => verificarPagos({ silencioso: false })}
+                >
+                  Ya pagué, verificar mi pago
+                </Button>
+                {verificacion ? (
+                  <p
+                    className={`text-sm ${verificacion.tipo === "exito" ? "text-success" : verificacion.tipo === "error" ? "text-primary" : "text-muted"}`}
+                    role={verificacion.tipo === "error" ? "alert" : "status"}
+                  >
+                    {verificacion.mensaje}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </>
       )}

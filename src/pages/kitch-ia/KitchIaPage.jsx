@@ -77,6 +77,11 @@ function KitchIaPage() {
     }
   }
 
+  async function refreshFavorites() {
+    const ids = await favoritosService.listIds().catch(() => favorites)
+    setFavorites(ids)
+  }
+
   async function handleToggleFavorite(recetaId) {
     try {
       await favoritosService.toggle(recetaId)
@@ -129,6 +134,7 @@ function KitchIaPage() {
                 message={message}
                 favorites={favorites}
                 onToggleFavorite={handleToggleFavorite}
+                onRecipeSaved={refreshFavorites}
               />
             ),
           )}
