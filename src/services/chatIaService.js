@@ -58,10 +58,14 @@ export const chatIaService = {
           }
         : null,
     }, { timeout: IA_TIMEOUT_MS })
+    const receta = mapRecetaChat(data.receta) ?? mapRecetaChat(data.recetaGuardada)
+    if (receta && !receta.recetaId && data.recetaGuardada?.recetaId) {
+      receta.recetaId = data.recetaGuardada.recetaId
+    }
     return {
       accion: data.accion,
       mensaje: data.mensaje,
-      receta: mapRecetaChat(data.receta) ?? mapRecetaChat(data.recetaGuardada),
+      receta,
       recetaGuardada: data.recetaGuardada,
       ingredienteSustituido: data.ingredienteSustituido,
       sustitutos: (data.sustitutos ?? []).map((item) => mapSustitutoFromApi(item)),

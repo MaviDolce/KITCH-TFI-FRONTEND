@@ -29,6 +29,11 @@ export const authService = {
       usuarioOMail: payload.usuarioOMail,
       password: payload.password,
     })
+    if (data.requiresTwoFactor === false && data.token) {
+      setSessionToken(data.token, data.expiresAt)
+      writePendingTwoFactor(null)
+      return { requiresTwoFactor: false, user: await loadPerfil() }
+    }
     return storePendingTwoFactor(data)
   },
 

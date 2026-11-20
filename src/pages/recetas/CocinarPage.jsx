@@ -56,6 +56,7 @@ function CocinarPage() {
   const [modalError, setModalError] = useState("")
   const [ofrecerParcial, setOfrecerParcial] = useState(false)
   const [resultado, setResultado] = useState(null)
+  const [pasoError, setPasoError] = useState("")
 
   useEffect(() => {
     let active = true
@@ -115,6 +116,7 @@ function CocinarPage() {
   }
 
   function handleToggleDone(numeroPaso) {
+    setPasoError("")
     setCompletados((current) =>
       current.includes(numeroPaso)
         ? current.filter((item) => item !== numeroPaso)
@@ -122,10 +124,30 @@ function CocinarPage() {
     )
   }
 
+  function pasoActualCompletado() {
+    const actual = receta?.preparaciones?.[paso]
+    return Boolean(actual && completados.includes(actual.numeroPaso))
+  }
+
+  function handleSiguiente() {
+    if (!pasoActualCompletado()) {
+      setPasoError("Marcá \"Paso completado\" antes de seguir.")
+      return
+    }
+    const ultimo = Math.max(0, (receta?.preparaciones?.length ?? 1) - 1)
+    setPasoError("")
+    setPaso((current) => Math.min(ultimo, current + 1))
+  }
+
   async function handleAbrirFinalizar() {
     if (!receta || finished) {
       return
     }
+    if (!pasoActualCompletado()) {
+      setPasoError("Marcá \"Paso completado\" antes de finalizar.")
+      return
+    }
+    setPasoError("")
     setModalOpen(true)
     setModalError("")
     setOfrecerParcial(false)
@@ -266,6 +288,12 @@ function CocinarPage() {
             onToggleDone={handleToggleDone}
           />
 
+          {pasoError ? (
+            <p className="mt-3 max-w-2xl text-sm text-primary" role="alert">
+              {pasoError}
+            </p>
+          ) : null}
+
           {finished && lastStep ? (
             <Card tone="ai" className="mt-4 max-w-2xl" role="status" aria-live="polite">
               <p className="text-2xl font-bold tracking-tight text-ink">¡Buen provecho!</p>
@@ -300,11 +328,7 @@ function CocinarPage() {
                   </Button>
                 ) : null}
                 {showSiguiente ? (
-                  <Button
-                    type="button"
-                    size="md"
-                    onClick={() => setPaso((current) => Math.min(totalPasos - 1, current + 1))}
-                  >
+                  <Button type="button" size="md" onClick={handleSiguiente}>
                     Siguiente
                   </Button>
                 ) : null}

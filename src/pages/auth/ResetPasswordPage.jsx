@@ -14,7 +14,7 @@ function ResetPasswordPage() {
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const email = searchParams.get("email") ?? ""
-  const [token, setToken] = useState(
+  const [token] = useState(
     location.state?.token ?? searchParams.get("token") ?? "",
   )
   const [nuevaPassword, setNuevaPassword] = useState("")
@@ -29,7 +29,7 @@ function ResetPasswordPage() {
     setSuccess("")
 
     if (!token.trim()) {
-      setError("El token de recuperación es obligatorio.")
+      setError("El enlace de recuperación no es válido. Pedí uno nuevo.")
       return
     }
     if (!isValidPassword(nuevaPassword)) {
@@ -62,17 +62,11 @@ function ResetPasswordPage() {
       subtitle={
         email
           ? `Elegí una nueva contraseña para ${email}.`
-          : "Ingresá el token de recuperación y tu nueva contraseña."
+          : "Elegí una nueva contraseña."
       }
     >
       <form className="grid gap-5" onSubmit={handleSubmit} noValidate>
-        <TextField
-          label="Token"
-          name="token"
-          autoComplete="off"
-          value={token}
-          onChange={(event) => setToken(event.target.value)}
-        />
+        <input type="hidden" name="token" value={token} />
         <TextField
           label="Nueva contraseña"
           name="nuevaPassword"

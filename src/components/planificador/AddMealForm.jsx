@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { TURNOS } from "../../constants/turnos"
+import { TURNOS_COMIDA } from "../../constants/turnos"
 import Button from "../ui/Button"
 import Card from "../ui/Card"
 import SelectField from "../ui/SelectField"
@@ -22,6 +22,7 @@ function AddMealForm({
   })
   const [loading, setLoading] = useState(false)
   const [replacing, setReplacing] = useState(false)
+  const [localError, setLocalError] = useState("")
   const editing = Boolean(initial.id)
 
   async function handleReplace() {
@@ -35,12 +36,18 @@ function AddMealForm({
 
   function handleChange(event) {
     const { name, value } = event.target
+    setLocalError("")
     setForm((current) => ({ ...current, [name]: value }))
   }
 
   async function handleSubmit(event) {
     event.preventDefault()
     if (!form.recetaId) {
+      setLocalError("Elegí una receta.")
+      return
+    }
+    if (!TURNOS_COMIDA.includes(form.turno)) {
+      setLocalError("Elegí Desayuno, Almuerzo o Cena.")
       return
     }
     setLoading(true)
@@ -86,17 +93,18 @@ function AddMealForm({
           required
         />
 
-        <SelectField name="turno" label="Turno" value={form.turno} onChange={handleChange}>
-          {TURNOS.map((turno) => (
+        <SelectField name="turno" label="Tipo de comida" value={form.turno} onChange={handleChange} required>
+          <option value="">Elegí Desayuno, Almuerzo o Cena</option>
+          {TURNOS_COMIDA.map((turno) => (
             <option key={turno} value={turno}>
               {turno}
             </option>
           ))}
         </SelectField>
 
-        {error ? (
+        {localError || error ? (
           <p className="text-sm text-primary" role="alert">
-            {error}
+            {localError || error}
           </p>
         ) : null}
 

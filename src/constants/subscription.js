@@ -3,13 +3,14 @@ export const PREMIUM_PLAN = {
   periodo: "mes",
 }
 
-export const METODOS_PAGO = [
-  { value: "TarjetaCredito", label: "Tarjeta de crédito" },
-  { value: "TarjetaDebito", label: "Tarjeta de débito" },
-  { value: "TransferenciaBancaria", label: "Transferencia bancaria" },
-  { value: "BilleteraVirtual", label: "Billetera virtual" },
-  { value: "PayPal", label: "PayPal" },
-]
+const METODO_PAGO_BY_NAME = {
+  NoEspecificado: "Mercado Pago",
+  TarjetaCredito: "Tarjeta de crédito",
+  TarjetaDebito: "Tarjeta de débito",
+  TransferenciaBancaria: "Transferencia bancaria",
+  BilleteraVirtual: "Dinero en cuenta de Mercado Pago",
+  PayPal: "PayPal",
+}
 
 export const PLAN_BASICO_FEATURES = [
   "Recetas fáciles e intermedias",
@@ -26,12 +27,12 @@ export const PLAN_PREMIUM_FEATURES = [
 ]
 
 const METODO_PAGO_BY_NUMBER = {
-  0: "No especificado",
-  1: "Tarjeta de crédito",
-  2: "Tarjeta de débito",
-  3: "Transferencia bancaria",
-  4: "Billetera virtual",
-  5: "PayPal",
+  0: METODO_PAGO_BY_NAME.NoEspecificado,
+  1: METODO_PAGO_BY_NAME.TarjetaCredito,
+  2: METODO_PAGO_BY_NAME.TarjetaDebito,
+  3: METODO_PAGO_BY_NAME.TransferenciaBancaria,
+  4: METODO_PAGO_BY_NAME.BilleteraVirtual,
+  5: METODO_PAGO_BY_NAME.PayPal,
 }
 
 const ESTADO_PAGO_BY_NUMBER = {
@@ -46,7 +47,7 @@ export function metodoPagoLabel(value) {
   if (typeof value === "number") {
     return METODO_PAGO_BY_NUMBER[value] ?? String(value)
   }
-  return METODOS_PAGO.find((item) => item.value === value)?.label ?? value
+  return METODO_PAGO_BY_NAME[value] ?? value
 }
 
 export function estadoPagoLabel(value) {

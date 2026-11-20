@@ -47,6 +47,18 @@ function mapIngredienteDescuento(dto) {
   }
 }
 
+function mapPrevisualizacionPorciones(data) {
+  return {
+    receta: data.receta,
+    porcionesOriginales: data.porcionesOriginales,
+    nuevasPorciones: data.nuevasPorciones,
+    alcanzaStock: Boolean(data.alcanzaStock),
+    hayFaltantes: Boolean(data.hayFaltantes),
+    ingredientes: (data.ingredientes ?? []).map(mapIngredienteAjustado),
+    ingredientesFaltantes: (data.ingredientesFaltantes ?? []).map(mapIngredienteAjustado),
+  }
+}
+
 export const preparacionService = {
   async previsualizarPorciones({ recetaId, nuevasPorciones, sustituciones = [] }) {
     const { data } = await http.post("/api/Preparacion/previsualizar-porciones", {
@@ -54,15 +66,17 @@ export const preparacionService = {
       nuevasPorciones,
       sustituciones,
     })
-    return {
-      receta: data.receta,
-      porcionesOriginales: data.porcionesOriginales,
-      nuevasPorciones: data.nuevasPorciones,
-      alcanzaStock: Boolean(data.alcanzaStock),
-      hayFaltantes: Boolean(data.hayFaltantes),
-      ingredientes: (data.ingredientes ?? []).map(mapIngredienteAjustado),
-      ingredientesFaltantes: (data.ingredientesFaltantes ?? []).map(mapIngredienteAjustado),
-    }
+    return mapPrevisualizacionPorciones(data)
+  },
+
+  async marcarFaltanteDisponible({ recetaId, ingredienteId, nuevasPorciones, sustituciones = [] }) {
+    const { data } = await http.post("/api/Preparacion/marcar-faltante-disponible", {
+      recetaId,
+      ingredienteId,
+      nuevasPorciones,
+      sustituciones,
+    })
+    return mapPrevisualizacionPorciones(data)
   },
 
   async agregarFaltantes({ recetaId, nuevasPorciones, sustituciones = [] }) {
