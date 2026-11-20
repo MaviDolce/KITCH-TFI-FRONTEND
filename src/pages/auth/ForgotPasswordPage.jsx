@@ -1,7 +1,8 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { MailCheck } from "lucide-react"
 import AuthCard from "../../components/auth/AuthCard"
 import Button from "../../components/ui/Button"
+import StatusBanner from "../../components/ui/StatusBanner"
 import TextField from "../../components/ui/TextField"
 import TextLink from "../../components/ui/TextLink"
 import { ROUTES } from "../../constants/routes"
@@ -10,16 +11,15 @@ import { isEmail } from "../../utils/validators"
 
 function ForgotPasswordPage() {
   const { forgotPassword } = useAuth()
-  const navigate = useNavigate()
   const [email, setEmail] = useState("")
   const [error, setError] = useState("")
-  const [result, setResult] = useState(null)
+  const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(event) {
     event.preventDefault()
     setError("")
-    setResult(null)
+    setSent(false)
 
     if (!isEmail(email)) {
       setError("El formato del email no es válido.")
@@ -28,8 +28,8 @@ function ForgotPasswordPage() {
 
     setLoading(true)
     try {
-      const response = await forgotPassword(email)
-      setResult(response)
+      await forgotPassword(email)
+      setSent(true)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -42,40 +42,45 @@ function ForgotPasswordPage() {
       title="¿Olvidaste tu contraseña?"
       subtitle="Te vamos a indicar cómo restablecerla si el correo está registrado."
     >
-      {result ? (
-        <div className="grid gap-4">
-          <p className="text-sm leading-relaxed text-ink">{result.message}</p>
-          <Button
-            className="w-full"
-            onClick={() => navigate(ROUTES.resetPassword)}
-          >
-            Restablecer contraseña
+      {sent ? (
+        <div className="animate-confirm-pop grid gap-4">
+          <div className="flex items-start gap-3 rounded-2xl bg-success/10 p-4" role="status">
+            <span
+              className="animate-badge-pop flex size-9 shrink-0 items-center justify-center rounded-full bg-success/20 text-success"
+              aria-hidden="true"
+            >
+              <MailCheck size={18} />
+            </span>
+            <p className="text-sm leading-relaxed text-ink">
+              Te enviamos instrucciones para recuperar tu contraseña. Revisá tu casilla de correo y volvé a iniciar sesión.
+            </p>
+          </div>
+          <Button to={ROUTES.login} replace className="w-full">
+            Volver
           </Button>
         </div>
       ) : (
-        <form className="grid gap-5" onSubmit={handleSubmit} noValidate>
-          <TextField
-            label="Email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-          {error ? (
-            <p className="text-sm text-primary" role="alert">
-              {error}
-            </p>
-          ) : null}
-          <Button type="submit" className="w-full" loading={loading}>
-            Enviar instrucciones
-          </Button>
-        </form>
-      )}
+        <>
+          <form className="grid gap-5" onSubmit={handleSubmit} noValidate>
+            <TextField
+              label="Email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+            {error ? <StatusBanner message={error} tone="error" /> : null}
+            <Button type="submit" className="w-full" loading={loading}>
+              Enviar instrucciones
+            </Button>
+          </form>
 
-      <p className="mt-6 text-center text-sm text-muted">
-        <TextLink to={ROUTES.login}>Volver al inicio de sesión</TextLink>
-      </p>
+          <p className="mt-6 text-center text-sm text-muted">
+            <TextLink to={ROUTES.login}>Volver al inicio de sesión</TextLink>
+          </p>
+        </>
+      )}
     </AuthCard>
   )
 }

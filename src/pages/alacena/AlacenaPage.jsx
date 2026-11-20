@@ -5,7 +5,9 @@ import FilterChip from "../../components/explorar/FilterChip"
 import Button from "../../components/ui/Button"
 import SearchField from "../../components/ui/SearchField"
 import Spinner from "../../components/ui/Spinner"
+import StatusBanner from "../../components/ui/StatusBanner"
 import { PANTRY_CATEGORIES } from "../../constants/pantryCategories"
+import { useTransientNotice } from "../../hooks/useTransientNotice"
 import { stockService } from "../../services/stockService"
 import { agruparPorCategoria, proximaCantidad } from "../../utils/stock"
 
@@ -16,7 +18,9 @@ function AlacenaPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
+  const [saliendoId, setSaliendoId] = useState(null)
   const [error, setError] = useState("")
+  const [notice, showNotice] = useTransientNotice()
 
   useEffect(() => {
     let active = true
@@ -70,6 +74,7 @@ function AlacenaPage() {
       return [...without, created]
     })
     setShowForm(false)
+    showNotice(`Agregamos ${created.nombreIngrediente} a tu alacena.`)
   }
 
   async function handleEdit(payload) {
@@ -79,6 +84,7 @@ function AlacenaPage() {
       fechaCaducidad: payload.fechaCaducidad ?? editing.fechaCaducidad,
     })
     mergeItem(editing.id, updated)
+    showNotice(`Actualizamos ${editing.nombreIngrediente}.`)
     setEditing(null)
   }
 
@@ -88,7 +94,12 @@ function AlacenaPage() {
     try {
       if (next <= 0) {
         await stockService.eliminar(item.id)
-        setItems((current) => current.filter((row) => row.id !== item.id))
+        setSaliendoId(item.id)
+        window.setTimeout(() => {
+          setItems((current) => current.filter((row) => row.id !== item.id))
+          setSaliendoId((current) => (current === item.id ? null : current))
+          showNotice(`Quitamos ${item.nombreIngrediente} de tu alacena.`)
+        }, 220)
         return
       }
       const updated = await stockService.actualizar(item.id, {
@@ -148,13 +159,13 @@ function AlacenaPage() {
       </div>
 
       {showForm ? (
-        <div className="mt-6 max-w-3xl">
+        <div className="animate-fade-up mt-6 max-w-3xl">
           <AddStockForm onSubmit={handleCreate} onCancel={() => setShowForm(false)} />
         </div>
       ) : null}
 
       {editing ? (
-        <div className="mt-6 max-w-3xl">
+        <div className="animate-fade-up mt-6 max-w-3xl">
           <AddStockForm
             key={editing.id}
             item={editing}
@@ -164,11 +175,9 @@ function AlacenaPage() {
         </div>
       ) : null}
 
-      {error ? (
-        <p className="mt-6 text-sm text-primary" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {notice ? <StatusBanner message={notice} className="mt-6" /> : null}
+
+      {error ? <StatusBanner message={error} tone="error" className="mt-6" /> : null}
 
       {loading ? (
         <div className="mt-10 flex justify-center" role="status" aria-label="Cargando alacena">
@@ -193,7 +202,10 @@ function AlacenaPage() {
                 </h2>
                 <ul className="mt-3 grid gap-3 sm:grid-cols-2">
                   {group.map((item) => (
-                    <li key={item.id}>
+                    <li
+                      key={item.id}
+                      className={saliendoId === item.id ? "animate-checklist-exit pointer-events-none" : undefined}
+                    >
                       <StockItemCard
                         item={item}
                         onIncrement={(row) => handleStep(row, 1)}

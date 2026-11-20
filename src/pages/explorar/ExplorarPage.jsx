@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import FilterChip from "../../components/explorar/FilterChip"
 import RecipeCard from "../../components/recipes/RecipeCard"
+import ConfirmModal from "../../components/ui/ConfirmModal"
 import SearchField from "../../components/ui/SearchField"
 import Spinner from "../../components/ui/Spinner"
+import StatusBanner from "../../components/ui/StatusBanner"
 import { RECIPE_FILTERS } from "../../constants/recipeFilters"
 import { useAuth } from "../../hooks/useAuth"
 import { useTransientNotice } from "../../hooks/useTransientNotice"
@@ -20,6 +22,10 @@ function ExplorarPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState("")
   const [actionError, setActionError] = useState("")
+  const [recetaAEliminar, setRecetaAEliminar] = useState(null)
+  const [eliminando, setEliminando] = useState(false)
+  const [saliendoId, setSaliendoId] = useState(null)
+  const [deleteError, setDeleteError] = useState("")
   const [notice, showNotice] = useTransientNotice()
 
   useEffect(() => {
@@ -75,21 +81,45 @@ function ExplorarPage() {
     event.preventDefault()
   }
 
-  async function handleEliminar(receta) {
-    if (!receta?.usuarioId || receta.usuarioId !== user?.id) {
-      return
-    }
-    const ok = window.confirm(`¿Eliminar la receta "${receta.titulo}"? Esta acción no se puede deshacer.`)
-    if (!ok) {
+  function handleSolicitarEliminar(receta) {
+    if (!receta?.usuarioId || Number(receta.usuarioId) !== Number(user?.id)) {
       return
     }
     setActionError("")
+    setDeleteError("")
+    setRecetaAEliminar(receta)
+  }
+
+  function handleCancelarEliminar() {
+    if (eliminando) {
+      return
+    }
+    setDeleteError("")
+    setRecetaAEliminar(null)
+  }
+
+  async function handleConfirmarEliminar() {
+    if (!recetaAEliminar || eliminando) {
+      return
+    }
+    setDeleteError("")
+    setEliminando(true)
+    const targetId = recetaAEliminar.recetaId
+    const targetTitle = recetaAEliminar.titulo
     try {
-      await recetasService.eliminar(receta.recetaId)
-      setRecetas((current) => current.filter((item) => item.recetaId !== receta.recetaId))
-      showNotice("Eliminamos la receta.")
+      await recetasService.eliminar(targetId)
+      setRecetaAEliminar(null)
+      setSaliendoId(targetId)
+      window.setTimeout(() => {
+        setRecetas((current) => current.filter((item) => item.recetaId !== targetId))
+        setFavorites((current) => current.filter((id) => id !== targetId))
+        setSaliendoId((current) => (current === targetId ? null : current))
+        showNotice(`Eliminamos "${targetTitle}".`)
+      }, 210)
     } catch (error) {
-      setActionError(error.message)
+      setDeleteError(error.message)
+    } finally {
+      setEliminando(false)
     }
   }
 
@@ -157,16 +187,8 @@ function ExplorarPage() {
         </h2>
         <p className="mt-1 text-sm text-muted">Las que generaste. Borrarlas de acá no es lo mismo que sacarlas de favoritos.</p>
 
-        {actionError ? (
-          <p className="mt-4 text-sm text-primary" role="alert">
-            {actionError}
-          </p>
-        ) : null}
-        {notice ? (
-          <p className="mt-4 text-sm text-success" role="status">
-            {notice}
-          </p>
-        ) : null}
+        {actionError ? <StatusBanner message={actionError} tone="error" className="mt-4" /> : null}
+        {notice ? <StatusBanner message={notice} className="mt-4" /> : null}
 
         {loading ? (
           <div
@@ -189,12 +211,15 @@ function ExplorarPage() {
         ) : (
           <ul className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {propias.map((receta) => (
-              <li key={receta.recetaId}>
+              <li
+                key={receta.recetaId}
+                className={saliendoId === receta.recetaId ? "animate-card-exit pointer-events-none" : undefined}
+              >
                 <RecipeCard
                   receta={receta}
                   favorite={favorites.includes(receta.recetaId)}
                   onToggleFavorite={handleToggleFavorite}
-                  onDelete={handleEliminar}
+                  onDelete={handleSolicitarEliminar}
                 />
               </li>
             ))}
@@ -222,6 +247,21 @@ function ExplorarPage() {
           </ul>
         )}
       </section>
+
+      <ConfirmModal
+        open={Boolean(recetaAEliminar)}
+        title="Eliminar receta"
+        description={
+          recetaAEliminar
+            ? `¿Seguro que querés eliminar "${recetaAEliminar.titulo}"? Esta acción no se puede deshacer.`
+            : ""
+        }
+        confirmLabel="Eliminar"
+        loading={eliminando}
+        error={deleteError}
+        onConfirm={handleConfirmarEliminar}
+        onCancel={handleCancelarEliminar}
+      />
     </div>
   )
 }

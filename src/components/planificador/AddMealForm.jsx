@@ -47,7 +47,7 @@ function AddMealForm({
       return
     }
     if (!TURNOS_COMIDA.includes(form.turno)) {
-      setLocalError("Elegí Desayuno, Almuerzo o Cena.")
+      setLocalError("Elegí Desayuno, Almuerzo, Merienda o Cena.")
       return
     }
     setLoading(true)
@@ -94,7 +94,7 @@ function AddMealForm({
         />
 
         <SelectField name="turno" label="Tipo de comida" value={form.turno} onChange={handleChange} required>
-          <option value="">Elegí Desayuno, Almuerzo o Cena</option>
+          <option value="">Elegí Desayuno, Almuerzo, Merienda o Cena</option>
           {TURNOS_COMIDA.map((turno) => (
             <option key={turno} value={turno}>
               {turno}

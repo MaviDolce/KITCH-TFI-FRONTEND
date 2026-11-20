@@ -6,6 +6,10 @@ export const CHAT_ACCION = {
   recomendar: "recomendar",
   eliminarReceta: "eliminar_receta",
   planificarReceta: "planificar_receta",
+  eliminarComidaPlanificada: "eliminar_comida_planificada",
   cocinarReceta: "cocinar_receta",
   consultarRecetasGuardadas: "consultar_recetas_guardadas",
+  agregarIngredienteAlacena: "agregar_ingrediente_alacena",
+  actualizarIngredienteAlacena: "actualizar_ingrediente_alacena",
+  eliminarIngredienteAlacena: "eliminar_ingrediente_alacena",
 }

@@ -11,7 +11,7 @@ function MealCell({ meal, fecha, turno, menuOpen, onToggleMenu, onAdd, onChange,
           type="button"
           onClick={() => onAdd(fecha, turno)}
           aria-label={`Agregar comida el ${fecha}, ${turno}`}
-          className="inline-flex size-11 items-center justify-center rounded-full bg-primary text-white transition-colors duration-150 hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="inline-flex size-11 items-center justify-center rounded-full bg-primary text-white transition-[background-color,transform] duration-150 hover:scale-105 hover:bg-primary/90 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           <Plus size={16} strokeWidth={2.5} />
         </button>
@@ -21,8 +21,9 @@ function MealCell({ meal, fecha, turno, menuOpen, onToggleMenu, onAdd, onChange,
 
   return (
     <div
+      key={`${meal.id}-${meal.recetaId}`}
       data-meal-menu
-      className="relative flex min-h-[5.5rem] flex-col rounded-2xl bg-surface p-2.5 shadow-sm"
+      className="animate-fade-up relative flex min-h-[5.5rem] flex-col rounded-2xl bg-surface p-2.5 shadow-sm transition-shadow duration-150 hover:shadow-md"
     >
       <div className="flex items-start justify-between gap-1">
         <p className="line-clamp-2 text-sm font-semibold text-ink">{meal.titulo}</p>
@@ -36,12 +37,14 @@ function MealCell({ meal, fecha, turno, menuOpen, onToggleMenu, onAdd, onChange,
           <MoreVertical size={16} />
         </IconButton>
       </div>
-      <p className="mt-auto pt-1 text-xs text-muted">{meal.tiempoPreparacionMinutos} min</p>
+      {meal.tiempoPreparacionMinutos > 0 ? (
+        <p className="mt-auto pt-1 text-xs text-muted">{meal.tiempoPreparacionMinutos} min</p>
+      ) : null}
 
       {menuOpen ? (
         <div
           role="menu"
-          className="absolute top-9 right-1 z-10 min-w-36 rounded-xl border border-line bg-surface py-1 shadow-md"
+          className="animate-confirm-pop absolute top-9 right-1 z-10 min-w-36 rounded-xl border border-line bg-surface py-1 shadow-md"
         >
           <Link
             role="menuitem"

@@ -88,13 +88,35 @@ export const preparacionService = {
     return data ?? []
   },
 
-  async aplicarSustituto({ recetaId, ingredienteOriginalId, ingredienteSustitutoId }) {
+  async aplicarSustituto({
+    recetaId,
+    ingredienteOriginalId,
+    ingredienteSustitutoId,
+    sustitucionesActivas = [],
+  }) {
     const { data } = await http.post("/api/Preparacion/aplicar-sustituto", {
       recetaId,
       ingredienteOriginalId,
       ingredienteSustitutoId,
+      sustitucionesActivas,
     })
-    return { mensaje: data.mensaje }
+    return {
+      mensaje: data.mensaje,
+      titulo: data.titulo ?? "",
+      descripcion: data.descripcion ?? "",
+      ingredientes: (data.ingredientes ?? []).map((item) => ({
+        id: item.id,
+        ingredienteId: item.ingredienteId,
+        nombre: item.nombre,
+        cantidad: Number(item.cantidad),
+        unidadMedida: item.unidadMedida,
+      })),
+      preparaciones: (data.preparaciones ?? []).map((paso) => ({
+        id: paso.id,
+        numeroPaso: paso.numeroPaso,
+        descripcionPaso: paso.descripcionPaso,
+      })),
+    }
   },
 
   async previsualizarDescuento({ recetaId, porcionesCocinadas, sustituciones = [] }) {

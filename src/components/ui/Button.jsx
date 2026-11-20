@@ -28,7 +28,7 @@ function Button({
   ...props
 }) {
   const isDisabled = disabled || loading
-  const classes = `inline-flex items-center justify-center gap-2 rounded-2xl font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50 ${isDisabled && to ? "pointer-events-none cursor-not-allowed opacity-50" : ""} ${VARIANTS[variant]} ${SIZES[size]} ${className}`
+  const classes = `inline-flex items-center justify-center gap-2 rounded-2xl font-semibold transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.98] disabled:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50 ${isDisabled && to ? "pointer-events-none cursor-not-allowed opacity-50" : ""} ${VARIANTS[variant]} ${SIZES[size]} ${className}`
 
   const content = (
     <>

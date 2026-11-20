@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react"
-import { KeyRound, LockOpen, Trash2 } from "lucide-react"
+import { KeyRound, Lock, LockOpen, Trash2 } from "lucide-react"
 import Badge from "../../components/ui/Badge"
 import Button from "../../components/ui/Button"
 import Card from "../../components/ui/Card"
+import ConfirmModal from "../../components/ui/ConfirmModal"
 import SearchField from "../../components/ui/SearchField"
 import Spinner from "../../components/ui/Spinner"
+import StatusBanner from "../../components/ui/StatusBanner"
 import { ROLES } from "../../constants/roles"
 import { adminService } from "../../services/adminService"
 import { filtrarUsuarios, reemplazarUsuario } from "../../utils/admin"
@@ -16,6 +18,9 @@ function AdminUsuariosPage() {
   const [error, setError] = useState("")
   const [notice, setNotice] = useState("")
   const [pendingId, setPendingId] = useState(null)
+  const [saliendoId, setSaliendoId] = useState(null)
+  const [usuarioAEliminar, setUsuarioAEliminar] = useState(null)
+  const [deleteError, setDeleteError] = useState("")
 
   useEffect(() => {
     let active = true
@@ -51,10 +56,10 @@ function AdminUsuariosPage() {
       if (accion === "recuperar") {
         const result = await adminService.enviarRecuperacion(usuario.id)
         setNotice(result.message)
-      } else if (accion === "eliminar") {
-        await adminService.eliminar(usuario.id)
-        setUsuarios((current) => current.filter((item) => item.id !== usuario.id))
-        setNotice(`La cuenta de ${usuario.nombreUsuario} fue borrada.`)
+      } else if (accion === "bloqueo") {
+        const actualizado = await adminService.bloquear(usuario.id)
+        setUsuarios((current) => reemplazarUsuario(current, actualizado))
+        setNotice(`${actualizado.nombreUsuario} fue bloqueado.`)
       } else {
         const actualizado = await adminService.desbloquear(usuario.id)
         setUsuarios((current) => reemplazarUsuario(current, actualizado))
@@ -62,6 +67,30 @@ function AdminUsuariosPage() {
       }
     } catch (err) {
       setError(err.message)
+    } finally {
+      setPendingId(null)
+    }
+  }
+
+  async function confirmarEliminacion() {
+    if (!usuarioAEliminar || pendingId === usuarioAEliminar.id) {
+      return
+    }
+    const targetId = usuarioAEliminar.id
+    const targetNombre = usuarioAEliminar.nombreUsuario
+    setDeleteError("")
+    setPendingId(targetId)
+    try {
+      await adminService.eliminar(targetId)
+      setUsuarioAEliminar(null)
+      setSaliendoId(targetId)
+      window.setTimeout(() => {
+        setUsuarios((current) => current.filter((item) => item.id !== targetId))
+        setSaliendoId((current) => (current === targetId ? null : current))
+        setNotice(`La cuenta de ${targetNombre} fue borrada.`)
+      }, 210)
+    } catch (err) {
+      setDeleteError(err.message)
     } finally {
       setPendingId(null)
     }
@@ -81,16 +110,8 @@ function AdminUsuariosPage() {
         onChange={(event) => setBusqueda(event.target.value)}
       />
 
-      {error ? (
-        <p className="mt-4 text-sm text-primary" role="alert">
-          {error}
-        </p>
-      ) : null}
-      {notice ? (
-        <p className="mt-4 text-sm text-success" role="status">
-          {notice}
-        </p>
-      ) : null}
+      {error ? <StatusBanner message={error} tone="error" className="mt-4" /> : null}
+      {notice ? <StatusBanner message={notice} className="mt-4" /> : null}
 
       {loading ? (
         <div className="mt-10 flex justify-center" role="status" aria-label="Cargando usuarios">
@@ -104,7 +125,13 @@ function AdminUsuariosPage() {
           {visibles.map((usuario) => {
             const esAdmin = usuario.rol === ROLES.admin
             return (
-              <Card as="li" key={usuario.id} className="flex flex-wrap items-center justify-between gap-4">
+              <Card
+                as="li"
+                key={usuario.id}
+                className={`flex flex-wrap items-center justify-between gap-4 transition-shadow duration-150 hover:shadow-md ${
+                  saliendoId === usuario.id ? "animate-card-exit pointer-events-none" : ""
+                }`}
+              >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-semibold text-ink">
@@ -122,27 +149,36 @@ function AdminUsuariosPage() {
                     <Button
                       variant="outline"
                       size="md"
-                      loading={pendingId === usuario.id}
+                      disabled={pendingId === usuario.id}
                       onClick={() => {
-                        if (window.confirm(`¿Borrar la cuenta de ${usuario.nombreUsuario}? Se eliminan sus datos y no se puede deshacer.`)) {
-                          ejecutar(usuario, "eliminar")
-                        }
+                        setDeleteError("")
+                        setUsuarioAEliminar(usuario)
                       }}
                     >
                       <Trash2 size={16} aria-hidden="true" />
                       Borrar cuenta
                     </Button>
-                    {!usuario.activo ? (
+                    {usuario.activo ? (
                       <Button
                         variant="outline"
                         size="md"
-                        disabled={pendingId === usuario.id}
+                        loading={pendingId === usuario.id}
+                        onClick={() => ejecutar(usuario, "bloqueo")}
+                      >
+                        <Lock size={16} aria-hidden="true" />
+                        Bloquear
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="md"
+                        loading={pendingId === usuario.id}
                         onClick={() => ejecutar(usuario, "desbloqueo")}
                       >
                         <LockOpen size={16} aria-hidden="true" />
                         Desbloquear
                       </Button>
-                    ) : null}
+                    )}
                     <Button
                       variant="ghost"
                       size="md"
@@ -159,6 +195,26 @@ function AdminUsuariosPage() {
           })}
         </ul>
       )}
+
+      <ConfirmModal
+        open={Boolean(usuarioAEliminar)}
+        title="Borrar cuenta"
+        description={
+          usuarioAEliminar
+            ? `¿Seguro que querés borrar la cuenta de ${usuarioAEliminar.nombreUsuario}? Se eliminan todos sus datos y esta acción no se puede deshacer.`
+            : ""
+        }
+        confirmLabel="Borrar cuenta"
+        loading={Boolean(usuarioAEliminar && pendingId === usuarioAEliminar.id)}
+        error={deleteError}
+        onConfirm={confirmarEliminacion}
+        onCancel={() => {
+          if (!usuarioAEliminar || pendingId !== usuarioAEliminar.id) {
+            setDeleteError("")
+            setUsuarioAEliminar(null)
+          }
+        }}
+      />
     </div>
   )
 }

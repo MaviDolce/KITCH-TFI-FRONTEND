@@ -1,0 +1,36 @@
+name: CI Frontend Kitch
+
+on:
+  push:
+    branches:
+      - master
+      - nano-integracion
+  pull_request:
+    branches:
+      - master
+      - nano-integracion
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Verificar lint
+        run: npm run lint
+
+      - name: Compilar aplicación
+        env:
+          VITE_API_BASE_URL: https://api.example.invalid
+        run: npm run build

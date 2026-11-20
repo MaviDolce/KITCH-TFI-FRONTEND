@@ -4,6 +4,7 @@ import PlanCard from "../../components/suscripcion/PlanCard"
 import SubscriptionStatus from "../../components/suscripcion/SubscriptionStatus"
 import Button from "../../components/ui/Button"
 import Spinner from "../../components/ui/Spinner"
+import StatusBanner from "../../components/ui/StatusBanner"
 import {
   PLAN_BASICO_FEATURES,
   PLAN_PREMIUM_FEATURES,
@@ -143,15 +144,9 @@ function SuscripcionPage() {
               <>
                 <PaymentForm plan={plan} onSubmit={handleContratar} />
                 {planError ? (
-                  <p className="mt-4 max-w-xl text-sm text-primary" role="alert">
-                    {planError}
-                  </p>
+                  <StatusBanner message={planError} tone="error" className="mt-4 max-w-xl" />
                 ) : null}
-                {notice ? (
-                  <p className="mt-4 max-w-xl text-sm text-success" role="status">
-                    {notice}
-                  </p>
-                ) : null}
+                {notice ? <StatusBanner message={notice} className="mt-4 max-w-xl" /> : null}
               </>
             ) : (
               <SubscriptionStatus user={user} suscripcion={suscripcion} pagos={pagos} notice={notice} />
@@ -169,12 +164,16 @@ function SuscripcionPage() {
                   Ya pagué, verificar mi pago
                 </Button>
                 {verificacion ? (
-                  <p
-                    className={`text-sm ${verificacion.tipo === "exito" ? "text-success" : verificacion.tipo === "error" ? "text-primary" : "text-muted"}`}
-                    role={verificacion.tipo === "error" ? "alert" : "status"}
-                  >
-                    {verificacion.mensaje}
-                  </p>
+                  verificacion.tipo === "info" ? (
+                    <p className="animate-fade-up text-sm text-muted" role="status">
+                      {verificacion.mensaje}
+                    </p>
+                  ) : (
+                    <StatusBanner
+                      message={verificacion.mensaje}
+                      tone={verificacion.tipo === "error" ? "error" : "success"}
+                    />
+                  )
                 ) : null}
               </div>
             ) : null}

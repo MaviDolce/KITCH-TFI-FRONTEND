@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import AuthCard from "../../components/auth/AuthCard"
 import Button from "../../components/ui/Button"
+import StatusBanner from "../../components/ui/StatusBanner"
 import TextField from "../../components/ui/TextField"
 import TextLink from "../../components/ui/TextLink"
 import { ROUTES } from "../../constants/routes"
@@ -93,16 +94,8 @@ function VerifyCodePage() {
           onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
         />
 
-        {error ? (
-          <p className="text-sm text-primary" role="alert">
-            {error}
-          </p>
-        ) : null}
-        {notice && !error ? (
-          <p className="text-sm text-success" role="status">
-            {notice}
-          </p>
-        ) : null}
+        {error ? <StatusBanner message={error} tone="error" /> : null}
+        {notice && !error ? <StatusBanner message={notice} /> : null}
 
         <Button type="submit" className="w-full" loading={loading}>
           Verificar

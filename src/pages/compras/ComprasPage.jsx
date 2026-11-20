@@ -4,6 +4,7 @@ import ShoppingItemCard from "../../components/compras/ShoppingItemCard"
 import Button from "../../components/ui/Button"
 import SearchField from "../../components/ui/SearchField"
 import Spinner from "../../components/ui/Spinner"
+import StatusBanner from "../../components/ui/StatusBanner"
 import { listaCompraService } from "../../services/listaCompraService"
 import { agruparPorCategoria, stepForUnidad } from "../../utils/stock"
 
@@ -18,9 +19,9 @@ function ComprasPage() {
   const [filtro, setFiltro] = useState(FILTERS.todos)
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [saliendoId, setSaliendoId] = useState(null)
   const [notice, setNotice] = useState("")
   const [error, setError] = useState("")
-  const [generating, setGenerating] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -86,8 +87,13 @@ function ComprasPage() {
     return run(async () => {
       if (!item.estaComprado) {
         await listaCompraService.marcarComprado(item.id)
-        setItems(await listaCompraService.listar())
-        setNotice(`Sumamos ${item.nombreArticulo} a tu alacena y lo sacamos de la lista.`)
+        const updatedList = await listaCompraService.listar()
+        setSaliendoId(item.id)
+        window.setTimeout(() => {
+          setItems(updatedList)
+          setSaliendoId((current) => (current === item.id ? null : current))
+          setNotice(`Sumamos ${item.nombreArticulo} a tu alacena y lo sacamos de la lista.`)
+        }, 220)
         return
       }
       await listaCompraService.actualizar(item.id, {
@@ -111,7 +117,11 @@ function ComprasPage() {
       )
       if (next <= 0) {
         await listaCompraService.eliminar(item.id)
-        setItems((current) => current.filter((row) => row.id !== item.id))
+        setSaliendoId(item.id)
+        window.setTimeout(() => {
+          setItems((current) => current.filter((row) => row.id !== item.id))
+          setSaliendoId((current) => (current === item.id ? null : current))
+        }, 220)
         return
       }
       await listaCompraService.actualizar(item.id, {
@@ -125,17 +135,6 @@ function ComprasPage() {
         current.map((row) => (row.id === item.id ? { ...row, cantidadFaltante: next } : row)),
       )
     })
-  }
-
-  async function handleGenerar() {
-    setGenerating(true)
-    setNotice("")
-    await run(async () => {
-      const resumen = await listaCompraService.resumen()
-      setItems(await listaCompraService.listar())
-      setNotice(resumen.mensaje)
-    })
-    setGenerating(false)
   }
 
   return (
@@ -156,14 +155,9 @@ function ComprasPage() {
             Todo lo que necesitas para completar tus comidas
           </p>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button type="button" variant="outline" size="md" loading={generating} onClick={handleGenerar}>
-            Completar con el plan
-          </Button>
-          <Button type="button" size="md" onClick={() => setShowForm((open) => !open)}>
-            Agregar producto
-          </Button>
-        </div>
+        <Button type="button" size="md" onClick={() => setShowForm((open) => !open)}>
+          Agregar producto
+        </Button>
       </header>
 
       <div className="relative mt-6 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0" role="group" aria-label="Resumen de la lista">
@@ -171,7 +165,7 @@ function ComprasPage() {
           type="button"
           aria-pressed={filtro === FILTERS.todos}
           onClick={() => setFiltro(FILTERS.todos)}
-          className={`inline-flex h-11 shrink-0 items-center rounded-full px-4 text-sm font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+          className={`inline-flex h-11 shrink-0 items-center rounded-full px-4 text-sm font-semibold transition-[background-color,color,transform] duration-150 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
             filtro === FILTERS.todos ? "bg-primary/10 text-primary" : "bg-surface text-ink shadow-sm"
           }`}
         >
@@ -181,7 +175,7 @@ function ComprasPage() {
           type="button"
           aria-pressed={filtro === FILTERS.pendientes}
           onClick={() => setFiltro(FILTERS.pendientes)}
-          className={`inline-flex h-11 shrink-0 items-center rounded-full px-4 text-sm font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+          className={`inline-flex h-11 shrink-0 items-center rounded-full px-4 text-sm font-semibold transition-[background-color,color,transform] duration-150 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
             filtro === FILTERS.pendientes ? "bg-primary/10 text-primary" : "bg-surface text-ink shadow-sm"
           }`}
         >
@@ -197,19 +191,11 @@ function ComprasPage() {
         />
       </form>
 
-      {notice ? (
-        <p className="relative mt-4 text-sm text-success" role="status">
-          {notice}
-        </p>
-      ) : null}
-      {error ? (
-        <p className="relative mt-4 text-sm text-primary" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {notice ? <StatusBanner message={notice} className="relative mt-4" /> : null}
+      {error ? <StatusBanner message={error} tone="error" className="relative mt-4" /> : null}
 
       {showForm ? (
-        <div className="relative mt-6 max-w-3xl">
+        <div className="animate-fade-up relative mt-6 max-w-3xl">
           <AddShoppingItemForm onSubmit={handleCreate} onCancel={() => setShowForm(false)} />
         </div>
       ) : null}
@@ -221,7 +207,7 @@ function ComprasPage() {
       ) : visible.length === 0 ? (
         <p className="relative mt-8 text-base text-muted">
           {items.length === 0
-            ? "Tu lista está vacía. Agregá un producto o completá con el plan de la semana."
+            ? "Tu lista está vacía. Agregá un producto para empezar."
             : "No encontramos productos con esa búsqueda o filtro."}
         </p>
       ) : (
@@ -237,7 +223,10 @@ function ComprasPage() {
                 </h2>
                 <ul className="mt-3 grid gap-3 sm:grid-cols-2">
                   {group.map((item) => (
-                    <li key={item.id}>
+                    <li
+                      key={item.id}
+                      className={saliendoId === item.id ? "animate-checklist-exit pointer-events-none" : undefined}
+                    >
                       <ShoppingItemCard
                         item={item}
                         onToggle={handleToggle}

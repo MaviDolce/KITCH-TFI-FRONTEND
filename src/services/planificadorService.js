@@ -21,6 +21,7 @@ export function mapComidaFromApi(dto) {
     id: dto.id,
     recetaId: dto.recetaId,
     titulo: dto.recetaTitulo,
+    tiempoPreparacionMinutos: dto.recetaTiempoPreparacionMinutos ?? 0,
     fechaAsignada: toDateKey(dto.fechaAsignada),
     turno: dto.turno,
   }

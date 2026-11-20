@@ -65,9 +65,9 @@ function PagoExitosoPage() {
 
   return (
     <div className="relative isolate">
-      <Card className="max-w-xl" role={estado === "aprobado" ? "status" : "alert"}>
+      <Card className="animate-confirm-pop max-w-xl" role={estado === "aprobado" ? "status" : "alert"}>
         <div className="flex items-start gap-3">
-          <Icon size={28} className={tone} aria-hidden="true" />
+          <Icon size={28} className={`animate-badge-pop shrink-0 ${tone}`} aria-hidden="true" />
           <div className="min-w-0">
             <h1 className="text-2xl font-bold tracking-tight text-ink">{title}</h1>
             <p className="mt-2 text-sm text-muted">{mensaje}</p>

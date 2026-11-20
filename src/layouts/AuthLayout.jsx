@@ -1,8 +1,10 @@
-import { Outlet } from "react-router-dom"
+import { Outlet, useLocation } from "react-router-dom"
 import Card from "../components/ui/Card"
 import Logo from "../components/ui/Logo"
 
 function AuthLayout() {
+  const { pathname } = useLocation()
+
   return (
     <div className="min-h-svh bg-canvas lg:grid lg:grid-cols-2">
       <section className="relative hidden flex-col justify-between overflow-hidden bg-surface px-12 py-10 lg:flex">
@@ -38,7 +40,9 @@ function AuthLayout() {
           <div className="mb-8 flex justify-center lg:hidden">
             <Logo />
           </div>
-          <Outlet />
+          <div key={pathname} className="animate-page-in">
+            <Outlet />
+          </div>
         </div>
       </div>
     </div>

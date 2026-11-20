@@ -18,9 +18,16 @@ function RecipeCard({ receta, favorite, onToggleFavorite, onDelete }) {
   const cover = TONES[receta.tone] ?? TONES.ai
 
   return (
-    <Card padding={false} className="flex flex-col overflow-hidden">
+    <Card
+      padding={false}
+      className="group flex flex-col overflow-hidden transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-md"
+    >
       <div className={`flex h-40 items-center justify-center ${cover}`} aria-hidden="true">
-        <ChefHat size={40} strokeWidth={1.75} />
+        <ChefHat
+          size={40}
+          strokeWidth={1.75}
+          className="transition-transform duration-200 group-hover:scale-105"
+        />
       </div>
 
       <div className="flex flex-1 flex-col p-5">
@@ -37,7 +44,12 @@ function RecipeCard({ receta, favorite, onToggleFavorite, onDelete }) {
               onClick={() => onToggleFavorite(receta.recetaId)}
               className={favorite ? "text-primary" : undefined}
             >
-              <Heart size={18} fill={favorite ? "currentColor" : "none"} />
+              <Heart
+                key={favorite ? "fav" : "nofav"}
+                size={18}
+                fill={favorite ? "currentColor" : "none"}
+                className={favorite ? "animate-heart-pop" : undefined}
+              />
             </IconButton>
           </div>
         </div>

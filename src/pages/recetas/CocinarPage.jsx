@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, ChefHat } from "lucide-react"
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 import CookStep from "../../components/cocinar/CookStep"
 import StockPreview from "../../components/cocinar/StockPreview"
@@ -10,12 +10,14 @@ import TextLink from "../../components/ui/TextLink"
 import { recetaDetallePath } from "../../constants/paths"
 import { ROUTES } from "../../constants/routes"
 import { ApiError } from "../../api/errors"
+import { useAuth } from "../../hooks/useAuth"
 import { preparacionService } from "../../services/preparacionService"
 import { recetasService } from "../../services/recetasService"
 import {
   cantidadesIniciales,
   readCookState,
   reemplazoPorSustituto,
+  resolverPasosAdaptados,
   toCantidadesUtilizadas,
   toSustituciones,
 } from "../../utils/cookSession"
@@ -43,6 +45,7 @@ function CocinarPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
+  const { user } = useAuth()
   const [receta, setReceta] = useState(null)
   const [planError, setPlanError] = useState("")
   const [loaded, setLoaded] = useState(false)
@@ -88,8 +91,19 @@ function CocinarPage() {
     }
   }, [id])
 
-  const session = useMemo(() => readCookState(location.state, receta), [location.state, receta])
+  const session = useMemo(
+    () => readCookState(location.state, receta, user?.id ?? null),
+    [location.state, receta, user?.id],
+  )
   const sustituciones = useMemo(() => toSustituciones(session.replacements), [session.replacements])
+  const pasosAdaptados = useMemo(
+    () => resolverPasosAdaptados(receta?.preparaciones ?? [], session.adaptacion, session.replacements),
+    [receta, session.adaptacion, session.replacements],
+  )
+  const tituloMostrado =
+    Object.keys(session.replacements).length > 0 && session.adaptacion?.titulo
+      ? session.adaptacion.titulo
+      : receta?.titulo ?? ""
   const finished = Boolean(resultado)
 
   const previewConReemplazos = useMemo(() => {
@@ -249,8 +263,8 @@ function CocinarPage() {
     )
   }
 
-  const totalPasos = receta.preparaciones.length
-  const pasoActual = receta.preparaciones[paso]
+  const totalPasos = pasosAdaptados.length
+  const pasoActual = pasosAdaptados[paso]
   const firstStep = paso === 0
   const lastStep = paso === totalPasos - 1
   const showAnterior = !firstStep
@@ -271,7 +285,7 @@ function CocinarPage() {
       </Button>
 
       <header className="relative mt-4">
-        <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">{receta.titulo}</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">{tituloMostrado}</h1>
         <p className="mt-2 text-base text-muted">
           {session.porciones} porciones
           {receta.porciones !== session.porciones ? ` · receta base ${receta.porciones}` : ""}
@@ -295,9 +309,19 @@ function CocinarPage() {
           ) : null}
 
           {finished && lastStep ? (
-            <Card tone="ai" className="mt-4 max-w-2xl" role="status" aria-live="polite">
-              <p className="text-2xl font-bold tracking-tight text-ink">¡Buen provecho!</p>
-              {resultado.mensaje ? <p className="mt-2 text-sm text-muted">{resultado.mensaje}</p> : null}
+            <Card tone="ai" className="animate-confirm-pop mt-4 max-w-2xl" role="status" aria-live="polite">
+              <div className="flex items-center gap-3">
+                <span
+                  className="animate-badge-pop flex size-11 shrink-0 items-center justify-center rounded-2xl bg-success/15 text-success"
+                  aria-hidden="true"
+                >
+                  <ChefHat size={22} strokeWidth={2} />
+                </span>
+                <div>
+                  <p className="text-2xl font-bold tracking-tight text-ink">¡Buen provecho!</p>
+                  {resultado.mensaje ? <p className="mt-0.5 text-sm text-muted">{resultado.mensaje}</p> : null}
+                </div>
+              </div>
               <MovimientosList titulo="Descontado de tu alacena" items={resultado.descontados} />
               <MovimientosList titulo="Faltó en tu alacena" items={resultado.faltantes} />
               <MovimientosList titulo="No descontado (otra unidad)" items={resultado.noDescontados} />
@@ -346,7 +370,7 @@ function CocinarPage() {
 
       {modalOpen ? (
         <div
-          className="fixed inset-0 z-30 flex items-end justify-center bg-ink/40 p-4 sm:items-center"
+          className="animate-modal-backdrop fixed inset-0 z-30 flex items-end justify-center bg-ink/40 p-4 backdrop-blur-[2px] sm:items-center"
           role="presentation"
           onClick={handleCerrarModal}
         >
@@ -354,7 +378,7 @@ function CocinarPage() {
             role="dialog"
             aria-modal="true"
             aria-label="Finalizar y servir"
-            className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-surface p-6 shadow-xl"
+            className="animate-modal-panel max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-surface p-6 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
             {loadingPreview ? (

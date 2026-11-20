@@ -23,7 +23,7 @@ function SuggestionCards({ onSelect }) {
             type="button"
             key={item.id}
             padding={false}
-            className="w-full cursor-pointer p-5 text-left transition-colors duration-150 hover:bg-ai focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="w-full cursor-pointer p-5 text-left transition-[background-color,box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:bg-ai hover:shadow-md active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             onClick={() => onSelect(item.label)}
           >
             <Icon size={22} className={TONES[item.tone]} aria-hidden="true" />

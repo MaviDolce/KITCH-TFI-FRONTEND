@@ -63,6 +63,15 @@ export const recetasService = {
     }
   },
 
+  async crear(payload) {
+    const { data } = await http.post("/api/Recetas", payload)
+    return mapRecipeFromApi(data)
+  },
+
+  async actualizar(id, payload) {
+    await http.put(`/api/Recetas/${id}`, payload)
+  },
+
   async eliminar(id) {
     await http.delete(`/api/Recetas/${id}`)
   },

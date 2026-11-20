@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import RecipeCard from "../../components/recipes/RecipeCard"
 import SearchField from "../../components/ui/SearchField"
 import Spinner from "../../components/ui/Spinner"
+import StatusBanner from "../../components/ui/StatusBanner"
 import TextLink from "../../components/ui/TextLink"
 import { ROUTES } from "../../constants/routes"
 import { useTransientNotice } from "../../hooks/useTransientNotice"
@@ -13,6 +14,7 @@ function FavoritosPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState("")
   const [actionError, setActionError] = useState("")
+  const [saliendoId, setSaliendoId] = useState(null)
   const [notice, showNotice] = useTransientNotice()
 
   useEffect(() => {
@@ -58,7 +60,13 @@ function FavoritosPage() {
     try {
       const result = await favoritosService.toggle(recetaId)
       if (!result.esFavorito) {
-        setRecetas((current) => current.filter((receta) => receta.recetaId !== recetaId))
+        setSaliendoId(recetaId)
+        window.setTimeout(() => {
+          setRecetas((current) => current.filter((receta) => receta.recetaId !== recetaId))
+          setSaliendoId((current) => (current === recetaId ? null : current))
+          showNotice(result.message)
+        }, 210)
+        return
       }
       showNotice(result.message)
     } catch (error) {
@@ -95,16 +103,8 @@ function FavoritosPage() {
           Recetas guardadas
         </h2>
 
-        {actionError ? (
-          <p className="mt-4 text-sm text-primary" role="alert">
-            {actionError}
-          </p>
-        ) : null}
-        {notice ? (
-          <p className="mt-4 text-sm text-success" role="status">
-            {notice}
-          </p>
-        ) : null}
+        {actionError ? <StatusBanner message={actionError} tone="error" className="mt-4" /> : null}
+        {notice ? <StatusBanner message={notice} className="mt-4" /> : null}
 
         {loading ? (
           <div
@@ -132,7 +132,10 @@ function FavoritosPage() {
         ) : (
           <ul className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {visible.map((receta) => (
-              <li key={receta.recetaId}>
+              <li
+                key={receta.recetaId}
+                className={saliendoId === receta.recetaId ? "animate-card-exit pointer-events-none" : undefined}
+              >
                 <RecipeCard
                   receta={receta}
                   favorite
