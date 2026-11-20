@@ -4,7 +4,6 @@ import AssistantMessage from "../../components/kitch-ia/AssistantMessage"
 import ChatComposer from "../../components/kitch-ia/ChatComposer"
 import SuggestionCards from "../../components/kitch-ia/SuggestionCards"
 import UserMessage from "../../components/kitch-ia/UserMessage"
-import Spinner from "../../components/ui/Spinner"
 import { favoritosService } from "../../services/favoritosService"
 import { chatIaService } from "../../services/chatIaService"
 
@@ -139,10 +138,29 @@ function KitchIaPage() {
             ),
           )}
           {sending ? (
-            <div className="flex items-center gap-2 text-sm text-muted" role="status" aria-live="polite">
-              <Sparkles size={16} className="text-primary" aria-hidden="true" />
-              <span>Kitch está pensando</span>
-              <Spinner size={14} className="text-primary" />
+            <div
+              className="animate-fade-up inline-flex items-center gap-3 self-start rounded-2xl bg-surface/90 px-4 py-3 text-sm text-muted shadow-xs"
+              role="status"
+              aria-live="polite"
+            >
+              <img
+                src="/favicon.svg"
+                alt=""
+                aria-hidden="true"
+                className="animate-emblem-spin size-7 shrink-0 rounded-lg"
+              />
+              <span className="font-medium text-ink">Kitch está pensando</span>
+              <span className="inline-flex items-center gap-1" aria-hidden="true">
+                <span className="animate-dot-pulse size-1.5 rounded-full bg-primary" />
+                <span
+                  className="animate-dot-pulse size-1.5 rounded-full bg-primary"
+                  style={{ animationDelay: "160ms" }}
+                />
+                <span
+                  className="animate-dot-pulse size-1.5 rounded-full bg-primary"
+                  style={{ animationDelay: "320ms" }}
+                />
+              </span>
             </div>
           ) : null}
           <div ref={bottomRef} />

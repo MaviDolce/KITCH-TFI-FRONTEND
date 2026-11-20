@@ -4,7 +4,7 @@ import Card from "../ui/Card"
 function ProfileNavCard({ icon: Icon, title, tone = "primary", onClick, to }) {
   const toneClass = tone === "accent" ? "text-warning" : "text-primary"
   const classes =
-    "flex h-[115px] w-full flex-col justify-between p-5 text-left transition-colors duration-150 hover:bg-ai focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+    "flex h-[115px] w-full flex-col justify-between p-5 text-left transition-[background-color,box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:bg-ai hover:shadow-md active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 
   const content = (
     <>

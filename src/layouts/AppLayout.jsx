@@ -1,9 +1,11 @@
-import { Outlet } from "react-router-dom"
+import { Outlet, useLocation } from "react-router-dom"
 import MobileHeader from "../components/layout/MobileHeader"
 import MobileNav from "../components/layout/MobileNav"
 import Sidebar from "../components/layout/Sidebar"
 
 function AppLayout() {
+  const { pathname } = useLocation()
+
   return (
     <div className="min-h-svh overflow-x-clip bg-canvas lg:flex">
       <Sidebar />
@@ -14,7 +16,9 @@ function AppLayout() {
           tabIndex={-1}
           className="flex-1 scroll-mt-20 px-4 py-6 pb-32 lg:px-10 lg:py-8 lg:pb-8 lg:scroll-mt-8"
         >
-          <Outlet />
+          <div key={pathname} className="animate-page-in">
+            <Outlet />
+          </div>
         </main>
         <MobileNav />
       </div>

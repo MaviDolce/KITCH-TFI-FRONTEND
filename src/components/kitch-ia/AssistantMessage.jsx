@@ -7,7 +7,7 @@ function AssistantMessage({ message, favorites, onToggleFavorite, onRecipeSaved 
   const recomendaciones = message.recomendaciones ?? []
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="animate-fade-up flex flex-col gap-4">
       <div className="flex items-start gap-2">
         <Sparkles size={18} className="mt-0.5 shrink-0 text-primary" aria-hidden="true" />
         <div>

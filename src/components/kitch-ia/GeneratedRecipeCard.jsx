@@ -3,6 +3,7 @@ import { CheckCircle2, ChefHat, Clock } from "lucide-react"
 import MissingIngredientsChecklist from "../recipes/MissingIngredientsChecklist"
 import Button from "../ui/Button"
 import Card from "../ui/Card"
+import StatusBanner from "../ui/StatusBanner"
 import { recetaDetallePath } from "../../constants/paths"
 import { preparacionService } from "../../services/preparacionService"
 import { recetaIaService } from "../../services/recetaIaService"
@@ -90,7 +91,7 @@ function GeneratedRecipeCard({ receta, onSaved }) {
         </p>
 
         {expanded ? (
-          <div className="mt-4 grid gap-4 border-t border-line pt-4">
+          <div className="animate-fade-up mt-4 grid gap-4 border-t border-line pt-4">
             <section>
               <h4 className="text-sm font-semibold text-ink">Ingredientes</h4>
               <ul className="mt-2 space-y-1 text-sm text-ink">
@@ -134,11 +135,11 @@ function GeneratedRecipeCard({ receta, onSaved }) {
           )
         ) : null}
 
-        {notice ? (
-          <p className="mt-3 text-sm text-success" role="status">
-            {notice}
-          </p>
+        {savedId ? (
+          <StatusBanner message="Receta guardada en Mis recetas." className="mt-4 w-full" />
         ) : null}
+
+        {notice ? <StatusBanner message={notice} className="mt-3 w-full" /> : null}
 
         {error ? (
           <p className="mt-3 text-sm text-primary" role="alert">

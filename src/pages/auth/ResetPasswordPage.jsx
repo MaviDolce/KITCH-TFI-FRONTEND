@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
 import AuthCard from "../../components/auth/AuthCard"
 import Button from "../../components/ui/Button"
+import StatusBanner from "../../components/ui/StatusBanner"
 import TextField from "../../components/ui/TextField"
 import TextLink from "../../components/ui/TextLink"
 import { ROUTES } from "../../constants/routes"
@@ -56,6 +57,26 @@ function ResetPasswordPage() {
     }
   }
 
+  const hasToken = Boolean(token.trim())
+
+  if (!hasToken) {
+    return (
+      <AuthCard
+        title="Enlace no válido"
+        subtitle="Abrí el enlace que te enviamos por correo para restablecer tu contraseña."
+      >
+        <div className="grid gap-4">
+          <Button to={ROUTES.forgotPassword} replace className="w-full">
+            Pedir un nuevo enlace
+          </Button>
+          <p className="text-center text-sm text-muted">
+            <TextLink to={ROUTES.login}>Volver al inicio de sesión</TextLink>
+          </p>
+        </div>
+      </AuthCard>
+    )
+  }
+
   return (
     <AuthCard
       title="Restablecer contraseña"
@@ -83,16 +104,8 @@ function ResetPasswordPage() {
           value={confirmacion}
           onChange={(event) => setConfirmacion(event.target.value)}
         />
-        {error ? (
-          <p className="text-sm text-primary" role="alert">
-            {error}
-          </p>
-        ) : null}
-        {success ? (
-          <p className="text-sm text-success" role="status">
-            {success}
-          </p>
-        ) : null}
+        {error ? <StatusBanner message={error} tone="error" /> : null}
+        {success ? <StatusBanner message={success} /> : null}
         <Button type="submit" className="w-full" loading={loading} disabled={Boolean(success)}>
           Guardar contraseña
         </Button>

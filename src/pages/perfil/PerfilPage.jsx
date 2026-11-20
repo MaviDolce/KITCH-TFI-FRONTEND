@@ -84,7 +84,7 @@ function PerfilPage() {
       </div>
 
       {section === "personal" ? (
-        <div className="relative mt-8">
+        <div className="animate-fade-up relative mt-8">
           <PersonalInfoForm
             user={profile}
             onSubmit={handleUpdate}
@@ -94,13 +94,13 @@ function PerfilPage() {
       ) : null}
 
       {section === "seguridad" ? (
-        <div className="relative mt-8">
+        <div className="animate-fade-up relative mt-8">
           <SecurityForm onSubmit={changePassword} onBack={() => setSection("hub")} />
         </div>
       ) : null}
 
       {section === "hub" ? (
-        <>
+        <div className="animate-fade-up">
           <div className="relative mt-8 grid max-w-2xl gap-4 sm:grid-cols-2">
             <ProfileNavCard
               icon={UserRound}
@@ -132,7 +132,7 @@ function PerfilPage() {
             <LogOut size={16} aria-hidden="true" />
             Cerrar sesión
           </Button>
-        </>
+        </div>
       ) : null}
     </div>
   )

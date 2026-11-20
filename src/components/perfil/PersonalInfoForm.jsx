@@ -2,6 +2,7 @@ import { useState } from "react"
 import Button from "../ui/Button"
 import Card from "../ui/Card"
 import SelectField from "../ui/SelectField"
+import StatusBanner from "../ui/StatusBanner"
 import TextField from "../ui/TextField"
 import { DIET_OPTIONS } from "../../constants/diet"
 import { isUsername } from "../../utils/validators"
@@ -113,16 +114,8 @@ function PersonalInfoForm({ user, onSubmit, onBack }) {
           ))}
         </SelectField>
 
-        {formError ? (
-          <p className="text-sm text-primary" role="alert">
-            {formError}
-          </p>
-        ) : null}
-        {notice ? (
-          <p className="text-sm text-success" role="status">
-            {notice}
-          </p>
-        ) : null}
+        {formError ? <StatusBanner message={formError} tone="error" /> : null}
+        {notice ? <StatusBanner message={notice} /> : null}
 
         <div className="flex flex-wrap gap-3">
           <Button type="submit" size="md" loading={loading}>

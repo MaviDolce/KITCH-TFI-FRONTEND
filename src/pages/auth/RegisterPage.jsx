@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import AuthCard from "../../components/auth/AuthCard"
 import Button from "../../components/ui/Button"
 import SelectField from "../../components/ui/SelectField"
+import StatusBanner from "../../components/ui/StatusBanner"
 import TextField from "../../components/ui/TextField"
 import TextLink from "../../components/ui/TextLink"
 import { DIET_OPTIONS } from "../../constants/diet"
@@ -137,11 +138,7 @@ function RegisterPage() {
           ))}
         </SelectField>
 
-        {formError ? (
-          <p className="text-sm text-primary" role="alert">
-            {formError}
-          </p>
-        ) : null}
+        {formError ? <StatusBanner message={formError} tone="error" /> : null}
 
         <Button type="submit" className="w-full" loading={loading}>
           Crear cuenta

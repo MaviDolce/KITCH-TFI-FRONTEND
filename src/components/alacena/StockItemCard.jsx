@@ -6,7 +6,7 @@ function StockItemCard({ item, onIncrement, onDecrement, onEdit }) {
 
   return (
     <div
-      className={`flex items-center justify-between gap-3 rounded-full px-4 py-2.5 shadow-sm ${
+      className={`flex items-center justify-between gap-3 rounded-full px-4 py-2.5 shadow-sm transition-shadow duration-150 hover:shadow-md ${
         expiring ? "bg-ai" : "bg-surface"
       }`}
     >
@@ -25,7 +25,7 @@ function StockItemCard({ item, onIncrement, onDecrement, onEdit }) {
           type="button"
           aria-label={`Editar ${item.nombreIngrediente}`}
           onClick={() => onEdit(item)}
-          className="inline-flex size-10 items-center justify-center rounded-full text-muted transition-colors duration-150 hover:bg-primary/10 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="inline-flex size-10 items-center justify-center rounded-full text-muted transition-[background-color,color,transform] duration-150 hover:bg-primary/10 hover:text-primary active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           <Pencil size={14} strokeWidth={2.5} />
         </button>
@@ -33,7 +33,7 @@ function StockItemCard({ item, onIncrement, onDecrement, onEdit }) {
           type="button"
           aria-label={`Restar ${item.nombreIngrediente}`}
           onClick={() => onDecrement(item)}
-          className="inline-flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors duration-150 hover:bg-primary/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="inline-flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary transition-[background-color,transform] duration-150 hover:bg-primary/15 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           <Minus size={14} strokeWidth={2.5} />
         </button>
@@ -41,7 +41,7 @@ function StockItemCard({ item, onIncrement, onDecrement, onEdit }) {
           type="button"
           aria-label={`Sumar ${item.nombreIngrediente}`}
           onClick={() => onIncrement(item)}
-          className="inline-flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors duration-150 hover:bg-primary/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="inline-flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary transition-[background-color,transform] duration-150 hover:bg-primary/15 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           <Plus size={14} strokeWidth={2.5} />
         </button>

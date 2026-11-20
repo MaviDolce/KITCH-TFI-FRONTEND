@@ -46,6 +46,8 @@ function AddShoppingItemForm({ onSubmit, onCancel }) {
         categoria: form.categoria || CATEGORIA_VARIOS,
       })
       setForm(EMPTY)
+    } catch (err) {
+      setError(err.message)
     } finally {
       setLoading(false)
     }

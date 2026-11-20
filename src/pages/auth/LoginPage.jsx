@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom"
 import AuthCard from "../../components/auth/AuthCard"
 import GoogleButton from "../../components/auth/GoogleButton"
 import Button from "../../components/ui/Button"
+import StatusBanner from "../../components/ui/StatusBanner"
 import TextField from "../../components/ui/TextField"
 import TextLink from "../../components/ui/TextLink"
 import { ROUTES } from "../../constants/routes"
@@ -66,11 +67,7 @@ function LoginPage() {
           labelEnd={<TextLink to={ROUTES.forgotPassword}>¿La olvidaste?</TextLink>}
         />
 
-        {error ? (
-          <p className="text-sm text-primary" role="alert">
-            {error}
-          </p>
-        ) : null}
+        {error ? <StatusBanner message={error} tone="error" /> : null}
 
         <Button type="submit" className="w-full" loading={loading}>
           Iniciar sesión

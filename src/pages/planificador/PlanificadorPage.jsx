@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState } from "react"
-import { useSearchParams } from "react-router-dom"
+import { ShoppingCart } from "lucide-react"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import AddMealForm from "../../components/planificador/AddMealForm"
 import WeekGrid from "../../components/planificador/WeekGrid"
 import WeekNav from "../../components/planificador/WeekNav"
+import Button from "../../components/ui/Button"
 import Card from "../../components/ui/Card"
 import Spinner from "../../components/ui/Spinner"
+import StatusBanner from "../../components/ui/StatusBanner"
+import { ROUTES } from "../../constants/routes"
 import { TURNOS_COMIDA } from "../../constants/turnos"
+import { listaCompraService } from "../../services/listaCompraService"
 import {
   PlanificadorConflictError,
   planificadorService,
@@ -29,12 +34,14 @@ function uniqueIngredients(meals, recetas) {
 }
 
 function PlanificadorPage() {
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const recetaParam = searchParams.get("receta")
   const [monday, setMonday] = useState(() => startOfWeek(new Date()))
   const [meals, setMeals] = useState([])
   const [recetas, setRecetas] = useState([])
   const [loading, setLoading] = useState(true)
+  const [generatingList, setGeneratingList] = useState(false)
   const [menuId, setMenuId] = useState(null)
   const [draft, setDraft] = useState(null)
   const [formError, setFormError] = useState("")
@@ -162,7 +169,12 @@ function PlanificadorPage() {
           setMeals((current) =>
             current.map((item) =>
               item.id === updated.id
-                ? { ...item, ...updated, titulo: receta?.titulo ?? item.titulo }
+                ? {
+                    ...item,
+                    ...updated,
+                    titulo: receta?.titulo ?? item.titulo,
+                    tiempoPreparacionMinutos: receta?.tiempoPreparacionMinutos ?? item.tiempoPreparacionMinutos,
+                  }
                 : item,
             ),
           )
@@ -201,11 +213,41 @@ function PlanificadorPage() {
     }
   }
 
+  async function handleGenerarLista() {
+    setGeneratingList(true)
+    setNotice("")
+    try {
+      const resumen = await listaCompraService.resumen()
+      if (resumen.todoCubierto) {
+        setNotice(resumen.mensaje || "¡Tenés todo lo necesario en tu alacena!")
+        return
+      }
+      navigate(ROUTES.compras)
+    } catch (error) {
+      setNotice(error.message || "No pudimos generar la lista de compras.")
+    } finally {
+      setGeneratingList(false)
+    }
+  }
+
   return (
     <div>
-      <header>
-        <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">Planificador</h1>
-        <p className="mt-2 text-base text-muted">Organizá tus comidas y prepará tu semana.</p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">Planificador</h1>
+          <p className="mt-2 text-base text-muted">Organizá tus comidas y prepará tu semana.</p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="md"
+          loading={generatingList}
+          disabled={meals.length === 0}
+          onClick={handleGenerarLista}
+        >
+          <ShoppingCart size={16} aria-hidden="true" />
+          Generar lista de compras
+        </Button>
       </header>
 
       <WeekNav
@@ -221,13 +263,15 @@ function PlanificadorPage() {
       />
 
       {notice || queryNotice ? (
-        <p className={`mt-4 text-sm ${queryNotice && !notice ? "text-primary" : "text-success"}`} role="status">
-          {notice || queryNotice}
-        </p>
+        <StatusBanner
+          message={notice || queryNotice}
+          tone={queryNotice && !notice ? "error" : "success"}
+          className="mt-4"
+        />
       ) : null}
 
       {formDraft ? (
-        <div className="mt-6">
+        <div className="animate-fade-up mt-6">
           <AddMealForm
             key={`${formDraft.id ?? "new"}-${formDraft.fechaAsignada}-${formDraft.turno}-${formDraft.recetaId}`}
             recetas={recetas}
