@@ -5,13 +5,18 @@ function PlanCard({ title, price, hint, features, featured = false, current = fa
   return (
     <Card
       tone={featured ? "ai" : "surface"}
-      className={`flex flex-col ${featured ? "ring-2 ring-accent" : ""}`}
+      className={`flex flex-col transition-[box-shadow,border-color,background-color,transform] duration-200 ${
+        featured ? "ring-2 ring-accent" : ""
+      } ${current ? "shadow-sm" : ""}`}
     >
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-bold tracking-tight text-ink">{title}</h2>
         {current ? (
-          <span className="rounded-full bg-line px-3 py-1 text-xs font-semibold text-muted">
-            Actual
+          <span
+            key={title}
+            className="animate-badge-pop rounded-full bg-ink px-3 py-1 text-xs font-semibold text-white"
+          >
+            Plan actual
           </span>
         ) : null}
       </div>

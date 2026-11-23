@@ -42,6 +42,15 @@ export const suscripcionService = {
     }
   },
 
+  async cancelar() {
+    const { data } = await http.post("/api/Suscripciones/cancelar")
+    return {
+      rolActual: data?.rolActual ?? "",
+      requiereRefrescarSesion: Boolean(data?.requiereRefrescarSesion),
+      mensaje: data?.mensaje ?? "",
+    }
+  },
+
   async listarPagos() {
     const { data } = await http.get("/api/Pagos/mios")
     return data ?? []
