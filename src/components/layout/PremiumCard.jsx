@@ -8,16 +8,18 @@ function PremiumCard() {
   const isBasico = user?.rol === ROLES.basico
 
   return (
-    <div className="rounded-2xl bg-ai p-4">
+    <div className="rounded-2xl bg-ai p-4 transition-colors duration-200">
       <p className="font-semibold text-ink">Kitch Premium</p>
-      <p className="mt-1 text-sm text-muted">{isBasico ? "Mejora tu plan" : "Tu plan está activo"}</p>
+      <p key={isBasico ? "basico" : "activo"} className="animate-fade-up mt-1 text-sm text-muted">
+        {isBasico ? "Mejora tu plan" : "Tu plan está activo"}
+      </p>
       <Button
         to={ROUTES.suscripcion}
         variant="accent"
         size="md"
         className="mt-3 w-full"
       >
-        {isBasico ? "Mejorar" : "Ver plan"}
+        {isBasico ? "Mejorar" : "Administrar plan"}
       </Button>
     </div>
   )
